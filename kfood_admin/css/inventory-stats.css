@@ -1,0 +1,172 @@
+/* Enhanced Inventory Statistics Cards */
+.inventory-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.5rem;
+}
+
+.stat-details {
+    flex: 1;
+    z-index: 1;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.stat-label {
+    color: #4b5563;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.stat-sublabel {
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+.stat-chart {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.chart-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: conic-gradient(
+        currentColor var(--percent),
+        #f3f4f6 var(--percent)
+    );
+    opacity: 0.15;
+}
+
+/* Card Variants */
+.stat-card.total {
+    --card-color: #2563eb;
+    color: var(--card-color);
+}
+
+.stat-card.total .stat-icon {
+    background-color: #e0e7ff;
+}
+
+.stat-card.warning {
+    --card-color: #f59e0b;
+    color: var(--card-color);
+}
+
+.stat-card.warning .stat-icon {
+    background-color: #fef3c7;
+}
+
+.stat-card.danger {
+    --card-color: #dc2626;
+    color: var(--card-color);
+}
+
+.stat-card.danger .stat-icon {
+    background-color: #fee2e2;
+}
+
+.stat-card.success {
+    --card-color: #059669;
+    color: var(--card-color);
+}
+
+.stat-card.success .stat-icon {
+    background-color: #ecfdf5;
+}
+
+/* Hover Effects */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(var(--card-color-rgb), 0.03)
+    );
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover::before {
+    width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .inventory-stats {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        padding: 0 1rem;
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+    }
+
+    .stat-number {
+        font-size: 1.75rem;
+    }
+
+    .stat-chart {
+        display: none;
+    }
+}
+
+/* Animation */
+@keyframes countUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.stat-number {
+    animation: countUp 0.5s ease-out forwards;
+}

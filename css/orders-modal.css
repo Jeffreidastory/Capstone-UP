@@ -1,0 +1,447 @@
+/* Orders Modal Styles */
+.orders-list {
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.order-item {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.order-item:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.order-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.order-date {
+    display: block;
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.order-amount {
+    font-weight: 600;
+    color: #111827;
+    font-size: 1.1rem;
+}
+
+.order-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.items-info {
+    flex: 1;
+}
+
+.order-items {
+    margin-bottom: 0.5rem;
+}
+
+.items-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.items-list {
+    display: block;
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.payment-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.status-container {
+    margin-left: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* Status Tracker Styles */
+.status-tracker {
+    margin: 2rem 0;
+    position: relative;
+}
+
+.tracker-line {
+    height: 4px;
+    background: #e5e7eb;
+    position: relative;
+    border-radius: 2px;
+    margin: 2rem 0;
+}
+
+.progress-line {
+    position: absolute;
+    height: 100%;
+    background: #2563eb;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.tracker-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -10px;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-dot {
+    width: 20px;
+    height: 20px;
+    background: #e5e7eb;
+    border-radius: 50%;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-dot {
+    background: #2563eb;
+}
+
+.step.completed .step-dot {
+    background: #22c55e;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+.step.active .step-label {
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.step.completed .step-label {
+    color: #22c55e;
+}
+
+.see-details-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    color: #4b5563;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background-color: #f3f4f6;
+}
+
+.see-details-btn:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.see-details-btn i {
+    font-size: 0.8rem;
+}
+
+.status-pending {
+    background-color: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+}
+
+.status-preparing {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.status-delivered {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.status-out-delivery {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+}
+
+.order-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.order-number {
+    font-weight: 600;
+    color: #2563eb;
+    font-size: 0.95rem;
+}
+
+.order-date {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.order-amount {
+    font-weight: 600;
+    color: #111827;
+}
+
+.order-content {
+    margin-top: 0.75rem;
+}
+
+.items-info {
+    background-color: #f9fafb;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.items-count {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.items-list {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.payment-method {
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-preparing {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-delivered {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.view-all-orders {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-all-orders:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+}
+
+.error-message {
+    text-align: center;
+    color: #ef4444;
+    padding: 2rem;
+    background-color: #fef2f2;
+    border-radius: 8px;
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.error-message i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.retry-btn {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.no-orders-message {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.no-orders-message i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.no-orders-message h3 {
+    font-size: 1.25rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.no-orders-message p {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* No Orders Message Styling */
+.no-orders-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.no-orders-icon {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.no-orders-title {
+    font-size: 1.25rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.no-orders-text {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* New Order Animation */
+.new-order {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease-out;
+}
+
+.new-order.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-preparing {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-delivered {
+    background-color: #dcfce7;
+    color: #166534;
+}

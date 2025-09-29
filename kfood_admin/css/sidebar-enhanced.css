@@ -1,0 +1,108 @@
+.sidebar {
+    background: #1a1c23;
+    width: 280px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding: 1.5rem 0;
+    transition: all 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sidebar-header .logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.sidebar-header h2 {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0;
+}
+
+.menu-item {
+    padding: 0.25rem 1.5rem;
+}
+
+.menu-item a {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    gap: 0.75rem;
+}
+
+.menu-item a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: translateX(5px);
+}
+
+.menu-item.active a {
+    background: linear-gradient(45deg, #2c2b2a, #7a7371);
+    color: #fff;
+}
+
+.menu-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.menu-item span {
+    font-weight: 500;
+}
+
+/* Hover effect for icons */
+.menu-item a:hover i {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* Separator between menu groups */
+.menu-separator {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 1rem 1.5rem;
+}
+
+/* Special styling for logout item */
+.menu-item:last-child {
+    margin-top: auto;
+}
+
+.menu-item:last-child a {
+    color: #ef4444;
+}
+
+.menu-item:last-child a:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Main content adjustment */
+.main-content {
+    margin-left: 280px;
+    padding: 2rem;
+    transition: margin-left 0.3s ease;
+}

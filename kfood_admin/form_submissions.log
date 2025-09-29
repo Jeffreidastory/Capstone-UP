@@ -1,0 +1,186 @@
+2025-09-27 11:09:55 - Form submission:
+Array
+(
+    [timestamp] => 2025-09-27 11:09:55
+    [POST] => Array
+        (
+            [firstName] => deniseda
+            [lastName] => antafsf
+            [username] => Jeff
+            [email] => jeffreidastory@gmail.com
+            [password] => Jeff@123
+            [confirmPassword] => Jeff@123
+            [createUser] => 1
+            [roleId] => 2
+        )
+
+    [GET] => Array
+        (
+            [section] => roles
+        )
+
+    [FILES] => Array
+        (
+        )
+
+    [SESSION] => Array
+        (
+            [user_id] => 11
+            [username] => admin01
+            [role_id] => 2
+            [email] => admin01@gmail.com
+            [firstName] => Grace
+            [lastName] => anta
+            [admin_permissions] => Array
+                (
+                    [basic_access] => 1
+                )
+
+            [admin_id] => 1
+            [admin_username] => admin
+            [admin_role] => 1
+        )
+
+)
+
+
+2025-09-27 11:10:11 - Form submission:
+Array
+(
+    [timestamp] => 2025-09-27 11:10:11
+    [POST] => Array
+        (
+            [firstName] => deniseda
+            [lastName] => antafsf
+            [username] => Jeff
+            [email] => jeffreidastory@gmail.com
+            [password] => Jeff@123
+            [confirmPassword] => Jeff@123
+            [createUser] => 1
+            [roleId] => 2
+            [permissions] => Array
+                (
+                    [0] => dashboard
+                    [1] => landing
+                    [2] => menu
+                )
+
+        )
+
+    [GET] => Array
+        (
+            [section] => roles
+        )
+
+    [FILES] => Array
+        (
+        )
+
+    [SESSION] => Array
+        (
+            [user_id] => 11
+            [username] => admin01
+            [role_id] => 2
+            [email] => admin01@gmail.com
+            [firstName] => Grace
+            [lastName] => anta
+            [admin_permissions] => Array
+                (
+                    [basic_access] => 1
+                )
+
+            [admin_id] => 1
+            [admin_username] => admin
+            [admin_role] => 1
+        )
+
+)
+
+
+2025-09-27 11:13:43 - Form submission:
+Array
+(
+    [timestamp] => 2025-09-27 11:13:43
+    [POST] => Array
+        (
+            [firstName] => adsyui
+            [lastName] => qweert
+            [username] => qwer
+            [email] => qwer@gmail.com
+            [password] => Qwer@123
+            [confirmPassword] => Qwer@123
+            [createUser] => 1
+            [roleId] => 2
+        )
+
+    [GET] => Array
+        (
+            [section] => roles
+        )
+
+    [FILES] => Array
+        (
+        )
+
+    [SESSION] => Array
+        (
+            [admin_id] => 1
+            [admin_username] => admin
+            [admin_role] => 1
+        )
+
+)
+
+
+2025-09-27 18:41:29 - Form submission:
+Array
+(
+    [timestamp] => 2025-09-27 18:41:29
+    [POST] => Array
+        (
+            [firstName] => jaysss
+            [lastName] => yajss
+            [username] => Jaysss
+            [email] => jeffreidastoryasd@gmail.com
+            [password] => Jaysss@123
+            [confirmPassword] => Jaysss@123
+            [createUser] => 1
+            [roleId] => 2
+            [permissions] => Array
+                (
+                    [0] => dashboard
+                    [1] => landing
+                    [2] => inventory
+                )
+
+        )
+
+    [GET] => Array
+        (
+            [section] => roles
+        )
+
+    [FILES] => Array
+        (
+        )
+
+    [SESSION] => Array
+        (
+            [user_id] => 11
+            [username] => admin01
+            [role_id] => 2
+            [email] => admin01@gmail.com
+            [firstName] => Grace
+            [lastName] => anta
+            [admin_permissions] => Array
+                (
+                    [basic_access] => 1
+                )
+
+            [full_name] => Grace anta
+            [profile_picture] => 
+        )
+
+)
+
+

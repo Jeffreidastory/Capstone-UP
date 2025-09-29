@@ -1,0 +1,100 @@
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-placeholder:hover {
+    border-color: #2563eb;
+    background: #f0f7ff;
+}
+
+.upload-placeholder i {
+    font-size: 2.5rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+    transition: color 0.3s ease;
+}
+
+.upload-placeholder:hover i {
+    color: #2563eb;
+}
+
+.upload-text {
+    text-align: center;
+}
+
+.upload-text .main-text {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.upload-text .sub-text {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.upload-text .format-text {
+    display: block;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+#image-preview-container {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.image-preview {
+    position: relative;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.image-preview img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+}
+
+.remove-preview {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.remove-preview:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Drag and drop highlight */
+.file-input-wrapper.dragover .upload-placeholder {
+    border-color: #2563eb;
+    background: #f0f7ff;
+}

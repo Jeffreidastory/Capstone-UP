@@ -1,0 +1,307 @@
+<?php
+session_start();
+require_once "../connect.php";
+
+header('Content-Type: application/json');
+
+// Ensure the user is logged in and is a crew member
+if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    exit;
+}
+                $get_order->bind_param("i", $order_id);
+                
+                if (!$get_order->execute()) {
+                    throw new Exception("Failed to get order details: " . $conn->error);
+                }
+                
+                $order_result = $get_order->get_result();
+                $order_row = $order_result->fetch_assoc();
+                
+                if (!$order_row) {
+                    throw new Exception("Order not found");
+                }
+                
+                // Get each product's stock and update
+                $item_name = $order_row['item_name'];
+                $product_query = $conn->prepare("SELECT stock FROM products WHERE name = ?");
+                $product_query->bind_param("s", $item_name);
+                
+                if (!$product_query->execute()) {
+                    throw new Exception("Failed to check product stock");
+                }
+                
+                $product_result = $product_query->get_result();
+                $product_data = $product_result->fetch_assoc();
+                
+                if (!$product_data) {
+                    throw new Exception("Product not found in inventory");
+                }
+                
+                $current_stock = $product_data['stock'];
+                $new_stock = $current_stock - 1; // Deduct 1 from stock
+                
+                if ($new_stock < 0) {
+                    throw new Exception("Insufficient stock for {$item_name}");
+                }
+                
+                // Update product stock
+                $update_stock = $conn->prepare("UPDATE products SET stock = ? WHERE name = ?");
+                $update_stock->bind_param("is", $new_stock, $item_name);
+                
+                if (!$update_stock->execute()) {
+                    throw new Exception("Failed to update stock");
+                }e: application/json');
+
+// Ensure the user is logged in and is a crew member
+if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $order_id = $_POST['orderId'] ?? null;
+    $new_status = $_POST['status'] ?? null;
+    
+    if (!$order_id || !$new_status) {
+        echo json_encode(['success' => false, 'message' => 'Missing required parameters']);
+        exit;
+    }
+    
+    // Valid status values
+    $valid_statuses = ['pending', 'preparing', 'out for delivery', 'completed'];
+    if (!in_array($new_status, $valid_statuses)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status: ' . $new_status]);
+        exit;
+    }
+
+    // Get current order status and details
+    $get_order = $conn->prepare("SELECT status, item_name, total_products FROM orders WHERE id = ?");
+    $get_order->bind_param("i", $order_id);
+    $get_order->execute();
+    $result = $get_order->get_result();
+    $order = $result->fetch_assoc();
+
+    if (!$order) {
+        echo json_encode(['success' => false, 'message' => 'Order not found']);
+        exit;
+    }
+
+    // Check if status transition is valid
+    $valid_transitions = [
+        'pending' => ['preparing'],
+        'preparing' => ['out for delivery'],
+        'out for delivery' => ['completed']
+    ];
+
+    if (!isset($valid_transitions[$order['status']]) || 
+        !in_array($new_status, $valid_transitions[$order['status']])) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status transition from ' . $order['status'] . ' to ' . $new_status]);
+        exit;
+    }
+
+    // Check if the status transition is valid
+    $current_status_query = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+    $current_status_query->bind_param("i", $order_id);
+    $current_status_query->execute();
+    $result = $current_status_query->get_result();
+    $current_order = $result->fetch_assoc();
+
+    if (!$current_order) {
+        echo json_encode(['success' => false, 'message' => 'Order not found']);
+        exit;
+    }
+
+    $current_status = $current_order['status'];
+    $valid_transition = false;
+
+    // Define valid status transitions
+    $valid_transitions = [
+        'pending' => ['preparing'],
+        'preparing' => ['out for delivery'],
+        'out for delivery' => ['completed']
+    ];
+
+    if (isset($valid_transitions[$current_status]) && 
+        in_array($new_status, $valid_transitions[$current_status])) {
+        $valid_transition = true;
+    }
+
+    if (!$valid_transition) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status transition']);
+        exit;
+    }
+    
+    // Start transaction
+    $conn->begin_transaction();
+
+    try {
+        // Update order status
+        $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $new_status, $order_id);
+
+        if (!$stmt->execute()) {
+            throw new Exception('Failed to update order status');
+        }
+
+        // If marking as out for delivery, check and update stock
+        if ($new_status === 'out for delivery') {
+            // Extract items and quantities using regex
+            if (preg_match_all('/([^(]+)\s*\((\d+)\)/', $order['item_name'], $matches)) {
+                $items = array_map('trim', $matches[1]);
+                $quantities = $matches[2];
+
+                for ($i = 0; $i < count($items); $i++) {
+                    $item_name = $items[$i];
+                    $quantity = intval($quantities[$i]);
+
+                    // Get product stock
+                    $get_stock = $conn->prepare("SELECT id, stock FROM products WHERE name = ?");
+                    $get_stock->bind_param("s", $item_name);
+                    $get_stock->execute();
+                    $stock_result = $get_stock->get_result();
+                    $product = $stock_result->fetch_assoc();
+
+                    if (!$product) {
+                        throw new Exception("Product not found: $item_name");
+                    }
+
+                    // Calculate new stock
+                    $new_stock = $product['stock'] - $quantity;
+                    if ($new_stock < 0) {
+                        throw new Exception("Insufficient stock for: $item_name");
+                    }
+
+                    // Update stock
+                    $update_stock = $conn->prepare("UPDATE products SET stock = ? WHERE id = ?");
+                    $update_stock->bind_param("ii", $new_stock, $product['id']);
+                    if (!$update_stock->execute()) {
+                        throw new Exception("Failed to update stock for: $item_name");
+                    }
+
+                    // Log stock change
+                    $type = 'stock_out';
+                    $prev_stock = $product['stock'];
+                    $stock_history = $conn->prepare("INSERT INTO stock_history (product_id, type, quantity, previous_stock, new_stock) VALUES (?, ?, ?, ?, ?)");
+                    $stock_history->bind_param("isiii", $product['id'], $type, $quantity, $prev_stock, $new_stock);
+                    if (!$stock_history->execute()) {
+                        throw new Exception("Failed to log stock change for: $item_name");
+                    }
+                }
+            } else {
+                throw new Exception('Failed to parse order items');
+            }
+        }
+    
+    // Start transaction for status update and stock deduction
+    $conn->begin_transaction();
+
+    try {
+        if ($stmt->execute()) {
+            // If status is 'out for delivery', deduct stock
+            if ($new_status === 'out for delivery') {
+                // Get order items and quantities from the orders table
+                $get_items = $conn->prepare("SELECT id, item_name as name, total_products as quantity FROM orders WHERE id = ?");
+                $get_items->bind_param("i", $order_id);
+                if (!$get_items->execute()) {
+                    throw new Exception("Failed to get order items: " . $conn->error);
+                }
+                $items_result = $get_items->get_result();
+
+                while ($item = $items_result->fetch_assoc()) {
+                    // Get current stock
+                    $get_stock = $conn->prepare("SELECT stock FROM products WHERE name = ?");
+                    if (!$get_stock) {
+                        throw new Exception("Failed to prepare stock query: " . $conn->error);
+                    }
+                    $get_stock->bind_param("s", $item['name']);
+                    if (!$get_stock->execute()) {
+                        throw new Exception("Failed to get stock for {$item['name']}: " . $get_stock->error);
+                    }
+                    $stock_result = $get_stock->get_result();
+                    $stock_row = $stock_result->fetch_assoc();
+                    if (!$stock_row) {
+                        throw new Exception("Product {$item['name']} not found in inventory");
+                    }
+                    $current_stock = $stock_row['stock'];
+
+                    // Calculate new stock
+                    $quantity_to_deduct = $item['quantity'];
+                    $new_stock = $current_stock - $quantity_to_deduct;
+
+                    if ($new_stock < 0) {
+                        throw new Exception("Insufficient stock for {$item['name']}");
+                    }
+
+                    // Update product stock
+                    $update_stock = $conn->prepare("UPDATE products SET stock = ? WHERE name = ?");
+                    $update_stock->bind_param("is", $new_stock, $item['name']);
+                    $update_stock->execute();
+
+                    // Log stock change in history
+                    $type = 'stock_out';
+                    $stock_history = $conn->prepare("INSERT INTO stock_history (product_id, type, quantity, previous_stock, new_stock) SELECT id, ?, ?, ?, ? FROM products WHERE name = ?");
+                    $stock_history->bind_param("siiss", $type, $quantity_to_deduct, $current_stock, $new_stock, $item['name']);
+                    $stock_history->execute();
+                }
+            }
+
+            // Get updated order details
+            $get_order = $conn->prepare("SELECT id, order_time, total_price, total_products, status, item_name, method FROM orders WHERE id = ?");
+            $get_order->bind_param("i", $order_id);
+            $get_order->execute();
+            $result = $get_order->get_result();
+            $order = $result->fetch_assoc();
+
+            // Commit transaction
+            $conn->commit();
+        } else {
+            throw new Exception("Failed to update order status");
+        }
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['error' => $e->getMessage()]);
+        exit;
+    }
+        
+        // Get updated order details
+        $get_updated = $conn->prepare("SELECT id, order_time, total_price, total_products, status, item_name, method FROM orders WHERE id = ?");
+        $get_updated->bind_param("i", $order_id);
+        if (!$get_updated->execute()) {
+            throw new Exception('Failed to get updated order details');
+        }
+
+        $updated_result = $get_updated->get_result();
+        $updated_order = $updated_result->fetch_assoc();
+
+        // Commit the transaction
+        $conn->commit();
+
+        $order_data = [
+            'id' => str_pad($updated_order['id'], 4, '0', STR_PAD_LEFT),
+            'order_time' => date('M d, Y h:i A', strtotime($updated_order['order_time'])),
+            'total_price' => number_format($updated_order['total_price'], 2),
+            'total_products' => (int)$updated_order['total_products'],
+            'status' => ucfirst($updated_order['status']),
+            'items' => $updated_order['item_name'],
+            'payment_method' => ucfirst($updated_order['method'])
+        ];
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Order status updated successfully',
+            'order' => $order_data
+        ]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+}
+
+$stmt->close();
+$conn->close();

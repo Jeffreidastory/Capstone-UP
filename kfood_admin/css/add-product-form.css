@@ -1,0 +1,94 @@
+.add-product-form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.label-hint {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: normal;
+    margin-left: 4px;
+}
+
+.file-input-container {
+    position: relative;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.file-input-container:hover {
+    border-color: #2563eb;
+    background: #f0f7ff;
+}
+
+.file-input-container input[type="file"] {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.file-input-hint {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+.file-input-container:hover .file-input-hint {
+    color: #2563eb;
+}
+
+/* Input styles */
+.box {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+select.box {
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Submit button */
+.btn {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background: #1d4ed8;
+}

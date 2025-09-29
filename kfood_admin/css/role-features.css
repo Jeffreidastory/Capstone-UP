@@ -1,0 +1,36 @@
+.role-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.role-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4b5563;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.role-features li i {
+    color: #059669;
+    font-size: 12px;
+}
+
+.role-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.role-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, transparent 50%, rgba(37, 99, 235, 0.1) 50%);
+    border-radius: 0 0 0 100px;
+    pointer-events: none;
+}
