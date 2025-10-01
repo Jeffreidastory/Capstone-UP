@@ -69,8 +69,8 @@ if(isset($_POST['update_profile'])) {
         }
         
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['message'] = "Profile updated successfully!";
-            $_SESSION['message_type'] = "success";
+            // Show immediate feedback using JavaScript
+            echo "<script>alert('Profile updated successfully!');</script>";
             
             // Update session data
             $_SESSION['firstName'] = $firstName;

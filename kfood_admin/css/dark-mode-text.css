@@ -1,0 +1,75 @@
+[data-theme="dark"] {
+    /* Text color overrides for dark mode */
+    --text-primary: rgba(255, 255, 255, 0.9);
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark mode specific text overrides */
+[data-theme="dark"] .stat-info h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .stat-info p {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .chart-header h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .progress-content h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .progress-content p {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .recent-orders h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .dashboard-orders-table th {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .dashboard-orders-table td {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .section-description {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--text-secondary);
+}
+
+/* Status badges in dark mode */
+[data-theme="dark"] .status-badge.pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffd54f;
+}
+
+[data-theme="dark"] .status-badge.completed {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+}
+
+[data-theme="dark"] .status-badge.cancelled {
+    background: rgba(244, 67, 54, 0.2);
+    color: #e57373;
+}
+
+/* Chart elements in dark mode */
+[data-theme="dark"] .chart-period {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stat-trend {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}

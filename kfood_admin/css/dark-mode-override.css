@@ -1,0 +1,280 @@
+/* Dark Mode Text Visibility Overrides */
+[data-theme="dark"] {
+    --text-primary: rgba(255, 255, 255, 0.9);
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --bg-header: #1a1c23;
+    --bg-card: #1e2028;
+    --bg-input: #2d303a;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --shadow-dark: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Header Elements in Dark Mode */
+[data-theme="dark"] .main-header {
+    background-color: var(--bg-header);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .admin-panel-title,
+[data-theme="dark"] .dashboard-title,
+[data-theme="dark"] .header-content h1 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .admin-name {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .profile-info {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Search Bar in Dark Mode */
+[data-theme="dark"] .enhanced-search {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+}
+
+[data-theme="dark"] .search-icon {
+    color: var(--text-secondary) !important;
+}
+
+/* Cards and Containers in Dark Mode */
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .recent-orders,
+[data-theme="dark"] .stat-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-dark);
+}
+
+/* Chart and Graph Elements */
+[data-theme="dark"] .chart-content {
+    background-color: var(--bg-card);
+}
+
+[data-theme="dark"] .revenue-overview,
+[data-theme="dark"] .order-statistics {
+    color: var(--text-primary) !important;
+}
+
+/* Table Headers and Cells */
+[data-theme="dark"] .dashboard-orders-table th {
+    background-color: var(--bg-input);
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .dashboard-orders-table td {
+    color: var(--text-secondary) !important;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Status Badges in Dark Mode */
+[data-theme="dark"] .status-badge {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+}
+  
+/* Dashboard Stats Enhanced */
+[data-theme="dark"] .stat-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .stat-info h3 {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .stat-info p,
+[data-theme="dark"] .stat-trend {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Table Enhancements */
+[data-theme="dark"] .dashboard-orders-table {
+    background-color: var(--bg-table);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .dashboard-orders-table th {
+    background-color: var(--bg-table-header);
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 1px solid var(--border-subtle);
+    font-weight: 500;
+}
+
+[data-theme="dark"] .dashboard-orders-table td {
+    color: rgba(255, 255, 255, 0.7) !important;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .dashboard-orders-table tr:hover {
+    background-color: var(--bg-table-hover);
+}
+
+/* Status Badge Enhancements */
+[data-theme="dark"] .status-badge.completed {
+    background-color: rgba(76, 175, 80, 0.2) !important;
+    color: #81c784 !important;
+}
+
+[data-theme="dark"] .status-badge.pending {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+    color: #ffd54f !important;
+}
+
+[data-theme="dark"] .status-badge.cancelled {
+    background-color: rgba(244, 67, 54, 0.2) !important;
+    color: #e57373 !important;
+}
+
+/* Chart Area Enhancements */
+[data-theme="dark"] .chart-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .chart-content {
+    background-color: var(--bg-card);
+}
+
+[data-theme="dark"] .revenue-overview,
+[data-theme="dark"] .order-statistics {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .chart-period {
+    background-color: var(--bg-table-header);
+    color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid var(--border-subtle);
+}
+
+/* Completion Rate Circle */
+[data-theme="dark"] .completion-rate {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .completion-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Ensure text visibility in charts */
+[data-theme="dark"] .chart-container text {
+    fill: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .chart-axis text {
+    fill: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .chart-title {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Table Cells Specific Styles */
+[data-theme="dark"] .dashboard-orders-table td[data-label="Order ID"],
+[data-theme="dark"] .dashboard-orders-table td[data-label="Customer"] {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+}
+
+/* Dashboard Stats */
+[data-theme="dark"] .stat-info h3 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .stat-info p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .stat-trend {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background-color: var(--bg-tertiary);
+}
+
+/* Chart Text */
+[data-theme="dark"] .chart-header h3,
+[data-theme="dark"] .revenue-overview h3,
+[data-theme="dark"] .order-statistics h3 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .chart-content text,
+[data-theme="dark"] .chart-legend text {
+    fill: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Table Text */
+[data-theme="dark"] .dashboard-orders-table th {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .dashboard-orders-table td {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .dashboard-orders-table .status-badge {
+    background-color: var(--bg-tertiary);
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Chart Axis Labels */
+[data-theme="dark"] .chart-container g text {
+    fill: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Status Badge Colors */
+[data-theme="dark"] .status-badge.completed {
+    background-color: rgba(76, 175, 80, 0.2) !important;
+    color: #81c784 !important;
+}
+
+[data-theme="dark"] .status-badge.pending {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+    color: #ffd54f !important;
+}
+
+[data-theme="dark"] .status-badge.cancelled {
+    background-color: rgba(244, 67, 54, 0.2) !important;
+    color: #e57373 !important;
+}
+
+/* Section Headers */
+[data-theme="dark"] .section-header h2,
+[data-theme="dark"] .section-header h3 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .section-description {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Chart Period Selector */
+[data-theme="dark"] .chart-period {
+    background-color: var(--bg-tertiary);
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: var(--border-color);
+}
+
+/* Legend Items */
+[data-theme="dark"] .legend-item {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Order ID and Customer Name */
+[data-theme="dark"] .dashboard-orders-table td[data-label="Order ID"],
+[data-theme="dark"] .dashboard-orders-table td[data-label="Customer"] {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Chart Grid Lines */
+[data-theme="dark"] .chart-grid line {
+    stroke: rgba(255, 255, 255, 0.1) !important;
+}

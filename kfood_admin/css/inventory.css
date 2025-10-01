@@ -118,7 +118,7 @@
 
 .search-box i {
     position: absolute;
-    left: 15px;
+    left: 100px;
     top: 50%;
     transform: translateY(-50%);
     color: #95a5a6;

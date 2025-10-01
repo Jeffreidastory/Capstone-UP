@@ -1,0 +1,292 @@
+/* Dark Mode Styles for Admin Dashboard */
+
+/* Global S[data-theme="dark"] .stat-card {
+    background-color: #252730;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .stat-info h3 {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .stat-info p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}s */
+[data-theme="dark"] body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Header Bar */
+[data-theme="dark"] .main-header {
+    background-color: var(--header-bg);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .header-title h1, [data-theme="dark"] .header-content h1 {
+    color: #FFFFFF !important;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .search-container input {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .profile-info {
+    background-color: var(--bg-tertiary);
+}
+
+/* Dashboard Cards */
+[data-theme="dark"] .stat-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+}
+
+[data-theme="dark"] .stat-card h3 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .stat-card p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .stat-trend {
+    background-color: var(--bg-tertiary);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .stat-info h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .stat-info p {
+    color: var(--text-secondary);
+}
+
+/* Charts */
+[data-theme="dark"] .chart-card {
+    background-color: #252730;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chart-header h3,
+[data-theme="dark"] .revenue-overview,
+[data-theme="dark"] .order-statistics {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .chart-period {
+    background-color: #2d303a;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .legend-item {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .chart-header h3,
+[data-theme="dark"] .chart-content h3,
+[data-theme="dark"] .chart-content p {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .legend-item {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .chart-header h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] canvas {
+    background-color: var(--chart-bg);
+}
+
+/* Tables */
+[data-theme="dark"] .table-responsive {
+    background-color: #1a1a1a;
+}
+
+[data-theme="dark"] .users-table-container {
+    background-color: #1a1a1a;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .users-table th {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-bottom: 1px solid #333333;
+}
+
+[data-theme="dark"] .users-table td {
+    color: #e0e0e0;
+    border-bottom: 1px solid #333333;
+}
+
+[data-theme="dark"] .users-table tr:hover {
+    background-color: #2d2d2d;
+}
+
+[data-theme="dark"] .search-box input {
+    background-color: #2d2d2d;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .role-filter {
+    background-color: #2d2d2d;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .orders-table th,
+[data-theme="dark"] .dashboard-orders-table th {
+    background-color: var(--bg-tertiary);
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .orders-table td,
+[data-theme="dark"] .dashboard-orders-table td {
+    color: rgba(255, 255, 255, 0.7) !important;
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .status-badge {
+    background-color: var(--bg-tertiary);
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .orders-table td {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .orders-table tr:hover {
+    background-color: var(--table-row-hover);
+}
+
+/* Forms and Inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] input::placeholder {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-secondary);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-accent);
+    color: white;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background-color: var(--primary-accent-hover);
+}
+
+/* Status Badges */
+[data-theme="dark"] .status-badge {
+    opacity: 0.9;
+}
+
+/* Modals */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+/* Notifications */
+[data-theme="dark"] .notification {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Menu Creation Section */
+[data-theme="dark"] .add-product-form {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .file-input-container {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+/* Inventory Section */
+[data-theme="dark"] .inventory-table-container {
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .filter-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+}
+
+/* User Roles Section */
+[data-theme="dark"] .role-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .role-card h3 {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .role-card p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .role-features li {
+    color: var(--text-secondary);
+}
+
+/* Landing Settings Section */
+[data-theme="dark"] .settings-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Chart.js Customizations */
+[data-theme="dark"] .chartjs-render-monitor {
+    background-color: var(--chart-bg);
+}
+
+[data-theme="dark"] .chartjs-tooltip {
+    background-color: var(--tooltip-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Dark mode specific Chart.js options */
+[data-theme="dark"] {
+    --chart-grid-color: rgba(255, 255, 255, 0.1);
+    --chart-text-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ensure proper contrast for chart tooltips */
+[data-theme="dark"] .chartjs-tooltip {
+    background-color: var(--tooltip-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}

@@ -1,0 +1,206 @@
+/* Global Dark Mode Overrides */
+[data-theme="dark"] body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Header Components */
+[data-theme="dark"] .main-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .search-container input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+.search-container input:focus {
+    border-color: var(--primary-accent);
+}
+
+/* Dashboard Cards */
+.stat-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+    background-color: var(--bg-tertiary);
+    color: var(--primary-accent);
+}
+
+.stat-info h3 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-info p {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Charts */
+.chart-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.chart-header h3 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Tables */
+.table-responsive {
+    background-color: var(--bg-secondary);
+}
+
+.orders-table th {
+    background-color: var(--table-header-bg);
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.orders-table td {
+    color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.orders-table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Forms */
+input, select, textarea {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 2px var(--primary-accent-hover);
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Status Badges */
+.status-badge {
+    opacity: 0.9;
+}
+
+.status-badge.completed {
+    background-color: var(--success-color);
+    color: #fff;
+}
+
+.status-badge.pending {
+    background-color: var(--warning-color);
+    color: #000;
+}
+
+.status-badge.cancelled {
+    background-color: var(--error-color);
+    color: #fff;
+}
+
+/* Notifications */
+.notification {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+/* Profile Section */
+.profile-info {
+    background-color: var(--bg-tertiary);
+}
+
+.admin-name {
+    color: var(--text-primary);
+}
+
+/* Button States */
+.btn-primary {
+    background-color: var(--primary-accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-accent-hover);
+}
+
+/* Chart Customizations */
+.chart-container canvas {
+    background-color: var(--chart-bg);
+}
+
+/* Tooltips */
+.tooltip {
+    background-color: var(--tooltip-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Form Elements */
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+/* Table Headers */
+thead th {
+    background-color: var(--table-header-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Dropdown Menus */
+.dropdown-menu {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Card Headers */
+.card-header {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Pagination */
+.pagination .page-link {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    color: white;
+}
+
+/* Search Box */
+.search-box input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+.search-box input:focus {
+    background-color: var(--bg-tertiary);
+}

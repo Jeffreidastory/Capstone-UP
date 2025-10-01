@@ -1,0 +1,213 @@
+:root {
+  /* Light Theme Variables */
+  --primary-color: #00247d;
+  --primary-color-light: #4051b5;
+  --secondary-color: #fff;
+  --text-color: #000000;
+  --border-color: #ddd;
+  --background-primary: #ffffff;
+  --background-secondary: #f8f9fa;
+  --shadow-color: rgba(0, 0, 0, 0.16);
+  --text-secondary: #666;
+  --text-muted: #6c757d;
+  --hover-bg: #f0f7ff;
+
+  /* Common Variables */
+  --border-radius: 4px;
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --spacing-xl: 40px;
+  --container-width: 1200px;
+  --shadow: var(--shadow-color) 0px 1px 4px;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  --primary-color: #4051b5;
+  --primary-color-light: #5c6bc0;
+  --secondary-color: #2d2d2d;
+  --text-color: #ffffff;
+  --border-color: #404040;
+  --background-primary: #1a1a1a;
+  --background-secondary: #2d2d2d;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --text-secondary: #adb5bd;
+  --text-muted: #868e96;
+  --hover-bg: #2d3748;
+}
+
+/* Theme Transition */
+*, *::before, *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Base Styles */
+body {
+  background-color: var(--background-primary);
+  color: var(--text-color);
+}
+
+/* Common Element Styles */
+.card, .modal-content {
+  background-color: var(--background-secondary);
+  border-color: var(--border-color);
+}
+
+/* Sidebar */
+[data-theme="dark"] .sidebar {
+  background-color: var(--background-secondary);
+  border-right-color: var(--border-color);
+}
+
+[data-theme="dark"] .menu-item a {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background-color: var(--hover-bg);
+}
+
+[data-theme="dark"] .menu-item.active {
+  background-color: var(--primary-color);
+}
+
+[data-theme="dark"] .menu-item.active a {
+  color: #ffffff;
+}
+
+/* Header */
+[data-theme="dark"] .main-header {
+  background-color: var(--background-secondary);
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .search-container input {
+  background-color: var(--background-primary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .profile-info {
+  background-color: var(--background-primary);
+}
+
+/* Tables */
+[data-theme="dark"] .table-header {
+  background-color: var(--background-secondary);
+}
+
+[data-theme="dark"] .table-responsive {
+  background-color: var(--background-secondary);
+}
+
+[data-theme="dark"] thead th {
+  background-color: var(--background-primary);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] tbody td {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] tr:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Forms */
+[data-theme="dark"] .form-control, 
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: var(--background-primary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+/* Modals */
+[data-theme="dark"] .modal-content {
+  background-color: var(--background-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+/* Stats Cards */
+[data-theme="dark"] .stat-card {
+  background-color: var(--background-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stat-icon {
+  background-color: var(--background-primary);
+}
+
+/* Charts */
+[data-theme="dark"] .chart-card {
+  background-color: var(--background-secondary);
+}
+
+/* Notifications */
+[data-theme="dark"] .notification {
+  background-color: var(--background-secondary);
+  border-color: var(--border-color);
+}
+
+/* Status Badges */
+[data-theme="dark"] .status-badge {
+  opacity: 0.9;
+}
+
+input, select, textarea {
+  background-color: var(--background-primary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary-color);
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-light);
+}
+
+/* Table Styles */
+table {
+  background-color: var(--background-secondary);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+th {
+  background-color: var(--background-primary);
+}
+
+tr:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Text Colors */
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Links */
+a {
+  color: var(--primary-color);
+}
+
+a:hover {
+  color: var(--primary-color-light);
+}

@@ -34,7 +34,7 @@ if(isset($_POST["submit"])){
         error_log("Found user in super_admin_users table");
     } else {
         // Check in regular users table
-        $sql = "SELECT Id as user_id, username, Email, FirstName, LastName, Password, role_id FROM users WHERE username = ?";
+        $sql = "SELECT Id as user_id, username, Email, FirstName, LastName, Password, role_id, profile_picture FROM users WHERE username = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -68,11 +68,16 @@ if(isset($_POST["submit"])){
                 $_SESSION['full_name'] = $row['full_name'];
                 $_SESSION['admin_id'] = $row['user_id'];
                 $_SESSION['admin_role'] = 1;
+                $_SESSION['just_logged_in'] = true;
             } else {
                 // Regular user data
                 $_SESSION['email'] = $row['Email'];
                 $_SESSION['firstName'] = $row['FirstName'];
                 $_SESSION['lastName'] = $row['LastName'];
+                $_SESSION['profile_picture'] = !empty($row['profile_picture']) ? $row['profile_picture'] : null;
+                $_SESSION['login_timestamp'] = time();
+                $_SESSION['show_dashboard'] = true;
+                error_log('Profile picture set in session: ' . print_r($_SESSION['profile_picture'], true));
             }
             
             // Verify session data was set correctly

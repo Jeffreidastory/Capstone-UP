@@ -23,8 +23,18 @@ function hasPermission($conn, $userId, $section) {
 
 // Check if user is logged in and has appropriate permissions
 if (!isset($_SESSION['role_id'])) {
+    // Clear any lingering session data
+    session_unset();
+    session_destroy();
     header("Location: ../loginpage.php");
     exit();
+}
+
+// Clear any old notification flags if this isn't a fresh login
+if (!isset($_SESSION['just_logged_in']) || $_SESSION['just_logged_in'] !== true) {
+    unset($_SESSION['message']);
+    unset($_SESSION['message_type']);
+    echo "<script>sessionStorage.removeItem('alertShown');</script>";
 }
 
 // Allow both super admin (role_id = 1) and admin (role_id = 2)
@@ -244,23 +254,26 @@ if(isset($_POST['update_product'])){
       
       if($update_query){
          move_uploaded_file($update_p_image_tmp_name, $update_p_image_folder);
-         echo "<script>showNotification('Success', 'Product updated successfully', 'success');</script>";
+         header('Location: admin_pg.php?section=menu-creation&action=update');
+         exit();
       }else{
-         echo "<script>showNotification('Error', 'Product could not be updated', 'error');</script>";
+         echo "<script>alert('Error: Product could not be updated');</script>";
       }
    } else {
       // Update without changing the image
       $update_query = mysqli_query($conn, "UPDATE `products` SET name = '$update_p_name', price = '$update_p_price' WHERE id = '$update_p_id'");
       
       if($update_query){
-         echo "<script>showNotification('Success', 'Product updated successfully', 'success');</script>";
+         header('Location: admin_pg.php?section=menu-creation&action=update');
+         exit();
       }else{
-         echo "<script>showNotification('Error', 'Product could not be updated', 'error');</script>";
+         header('Location: admin_pg.php?section=menu-creation&action=error');
+         exit();
       }
    }
    
    // Prevent duplicate form submission
-   header("Location: admin_pg.php?section=menu-creation");
+   header('Location: admin_pg.php?section=menu-creation');
    exit();
 }
 
@@ -295,6 +308,12 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/menu-creation-enhanced.css">
     <link rel="stylesheet" href="css/add-product-form.css">
     <link rel="stylesheet" href="css/inventory-stats.css">
+    <link rel="stylesheet" href="css/theme-variables.css">
+    <link rel="stylesheet" href="css/dark-mode-components.css">
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="stylesheet" href="css/dark-mode-text.css">
+    <link rel="stylesheet" href="css/dark-mode-override.css">
+    <link rel="stylesheet" href="css/dark-mode-final.css">
     <link rel="stylesheet" href="css/image-upload.css">
     <link rel="stylesheet" href="css/adm-style.css">
     <link rel="stylesheet" href="css/admin-enhanced.css">
@@ -306,6 +325,186 @@ if ($_SESSION['role_id'] == 1) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Role Card Styles */
+        .role-card {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        [data-theme='dark'] .role-card {
+            background: #2a2d3a;
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(255, 127, 80, 0.1);
+        }
+
+        .role-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: rgba(255, 127, 80, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .role-icon i {
+            font-size: 24px;
+            color: #FF7F50;
+        }
+
+        .role-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            letter-spacing: 0.2px;
+        }
+
+        [data-theme='dark'] .role-title {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        h3.role-title {
+            color: #1a1a1a;
+        }
+
+        [data-theme='dark'] h3.role-title {
+            color: #ffffff !important;
+        }
+
+        .role-description {
+            color: #6B7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        [data-theme='dark'] .role-description {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 25px 0;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            color: #4B5563;
+            font-size: 14px;
+        }
+
+        [data-theme='dark'] .feature-item {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .feature-item i {
+            color: #10B981;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .create-button {
+            background: #FF7F50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: fit-content;
+            margin: 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .create-button:hover {
+            background: #ff6b3d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.2);
+        }
+
+        [data-theme='dark'] .create-button {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .feature-check {
+            color: #10B981;
+            margin-right: 8px;
+        }
+
+        [data-theme='dark'] .feature-check {
+            color: #34D399;
+        }
+
+        /* Global Styles */
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        [data-theme="dark"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        /* Sidebar and Menu Item Styles */
+        .menu-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item.active {
+            background: rgba(255, 127, 80, 0.1);
+        }
+
+        .menu-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: #FF7F50;
+        }
+
+        .menu-item.active a {
+            color: #FF7F50;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 127, 80, 0.05);
+        }
+
         /* Global Font Styles */
         * {
             font-family: 'Inter', sans-serif;
@@ -320,7 +519,7 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .stat-card {
-            background: rgba(255, 183, 94, 0.1);
+            background: #ffffff;
             border-radius: 10px;
             padding: 20px;
             display: flex;
@@ -331,6 +530,10 @@ if ($_SESSION['role_id'] == 1) {
             border: 1px solid rgba(255, 127, 80, 0.1);
             position: relative;
             overflow: hidden;
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: #2a2d3a;
         }
 
         .stat-card::before {
@@ -365,16 +568,30 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .stat-info h3 {
-            font-size: 1.8rem;
-            color: #FF7F50;
+            font-size: 1.5rem;
+            color: #FF6B3D;
             margin: 0 0 5px 0;
-            font-weight: 600;
+            font-weight: 700;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .stat-info h3 {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        [data-theme="dark"] .stat-info p {
+            color: rgba(255, 255, 255, 0.8) !important;
         }
 
         .stat-info p {
-            color: #666;
+            color: #4a4a4a;
             margin: 0;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        [data-theme="dark"] .stat-info p {
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .stat-trend {
@@ -389,6 +606,14 @@ if ($_SESSION['role_id'] == 1) {
         .stat-trend.positive {
             background: #e8f5e9;
             color: #2e7d32;
+            font-weight: 600;
+            padding: 6px 12px;
+        }
+
+        [data-theme="dark"] .stat-trend.positive {
+            background: rgba(46, 125, 50, 0.2);
+            color: #4CAF50;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .stat-trend.negative {
@@ -404,12 +629,19 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .chart-card {
-            background: white;
+            background: var(--bg-primary);
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .chart-card {
+            background: #262833;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .chart-card::before {
@@ -430,16 +662,23 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .chart-header h3 {
-            font-size: 1.2rem;
-            color: #333;
+            font-size: 1.25rem;
+            color: #1a1a1a;
             margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        [data-theme="dark"] .chart-header h3 {
+            color: #ffffff;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         }
 
         .chart-period {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 5px;
-            background: white;
+            background: #32364a;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .chart-legend {
@@ -451,8 +690,21 @@ if ($_SESSION['role_id'] == 1) {
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.9rem;
-            color: #666;
+            font-size: 0.95rem;
+            color: #4a4a4a;
+            font-weight: 500;
+        }
+        [data-theme="dark"] .legend-item {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        [data-theme="dark"] .legend-item {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        [data-theme="dark"] .chart-header h3 {
+            color: rgba(255, 255, 255, 0.95) !important;
+            font-weight: 500;
         }
 
         .legend-color {
@@ -469,11 +721,67 @@ if ($_SESSION['role_id'] == 1) {
             background: #FFC107;
         }
 
-        .progress-circle {
+        .completion-chart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            height: 100%;
+        }
+
+        .pie-chart-container {
+            width: 200px;
+            height: 200px;
             position: relative;
-            width: 160px;
-            height: 160px;
-            margin: 0 auto;
+            margin: 20px auto;
+        }
+
+        .pie-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 127, 80, 0.15);
+        }
+
+        .pie-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-primary);
+            border-radius: 50%;
+            width: 80%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .completion-percentage {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #FF7F50;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .completion-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        [data-theme="dark"] .pie-center {
+            background: #1a1c23;
+        }
+
+        [data-theme="dark"] .completion-label {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .progress-circle svg {
@@ -488,13 +796,23 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .progress-background {
-            stroke: #f0f0f0;
+            stroke: #e5e7eb;
+        }
+        [data-theme="dark"] .progress-background {
+            stroke: #32364a;
         }
 
         .progress-bar {
             stroke: #FF7F50;
             stroke-dasharray: 440;
             stroke-dashoffset: 66; /* 440 * (1 - progress%) */
+            stroke-width: 10;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        [data-theme="dark"] .progress-bar {
+            stroke: #FF7F50;
+            filter: drop-shadow(0 0 4px rgba(255, 127, 80, 0.3));
         }
 
         .progress-content {
@@ -503,12 +821,43 @@ if ($_SESSION['role_id'] == 1) {
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            background: transparent;
+        }
+        .progress-content h4 {
+            color: #FF7F50;
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .progress-content p {
+            color: #6B7280;
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+        }
+        [data-theme="dark"] .progress-content p {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .progress-content h4 {
             margin: 0;
             font-size: 1.8rem;
-            color: #333;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .progress-content h4 {
+            color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        [data-theme="dark"] .progress-content p {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        [data-theme="dark"] .completion-rate {
+            color: #FF7F50 !important;
+            font-weight: 600;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .progress-content p {
@@ -518,10 +867,17 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .recent-orders {
-            background: white;
+            background: var(--bg-primary);
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .recent-orders {
+            background: #262833;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .recent-orders .section-header {
@@ -533,7 +889,7 @@ if ($_SESSION['role_id'] == 1) {
 
         .recent-orders h3 {
             font-size: 1.2rem;
-            color: #333333ff;
+            color: var(--text-primary);
             margin: 0;
         }
 
@@ -546,24 +902,56 @@ if ($_SESSION['role_id'] == 1) {
         .dashboard-orders-table {
             width: 100%;
             border-collapse: collapse;
+            background-color: var(--bg-primary);
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         .dashboard-orders-table th,
         .dashboard-orders-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] .dashboard-orders-table {
+            background-color: #262833;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table tr:nth-child(even) {
+            background-color: #2a2d3a;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table tr:hover {
+            background-color: #32364a;
+            transition: background-color 0.2s ease;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table th {
+            background-color: #32364a;
+            color: rgba(255, 255, 255, 1) !important;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-bottom: 2px solid rgba(255, 127, 80, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table td {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .dashboard-orders-table th {
-            font-weight: 500;
-            color: #666;
-            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #f8f9fa;
         }
 
         .dashboard-orders-table td {
             font-size: 0.9rem;
-            color: #333333ff;
+            color: var(--text-primary);
         }
 
         .dashboard-orders-table .status-badge {
@@ -574,13 +962,27 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .dashboard-orders-table .status-badge.pending {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(255, 183, 94, 0.15);
+            color: #FF9F50;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table .status-badge.pending {
+            background: rgba(255, 183, 94, 0.2);
+            color: #FFB75E;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .dashboard-orders-table .status-badge.completed {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(255, 127, 80, 0.15);
+            color: #FF7F50;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .dashboard-orders-table .status-badge.completed {
+            background: rgba(255, 127, 80, 0.2);
+            color: #FFB75E;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .dashboard-orders-table .status-badge.cancelled {
@@ -628,8 +1030,12 @@ if ($_SESSION['role_id'] == 1) {
             overflow: hidden;
             border: 1px solid rgba(255, 127, 80, 0.1);
             transition: all 0.3s ease;
-            background: white;
+            background: #ffffff;
             padding: 20px;
+        }
+
+        [data-theme="dark"] .chart-card {
+            background: #2a2d3a;
         }
 
         .chart-content {
@@ -639,8 +1045,12 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .revenue-chart .chart-content {
-            background-color: white;
+            background-color: #ffffff;
             border-radius: 8px;
+        }
+
+        [data-theme="dark"] .revenue-chart .chart-content {
+            background-color: #2a2d3a;
         }
 
         .chart-card:hover {
@@ -772,15 +1182,29 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         /* Header and Profile Styles */
+        [data-theme="dark"] .admin-panel-title {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        [data-theme="dark"] .dashboard-title {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 600;
+        }
+
         .main-header {
-            background: #ffffff;
+            background: var(--bg-primary);
             padding: 0 24px;
             box-shadow: none;
             position: relative;
             height: 48px;
             display: flex;
             align-items: center;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .main-header {
+            background: #1a1c23;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .header-content {
@@ -790,6 +1214,11 @@ if ($_SESSION['role_id'] == 1) {
             width: 100%;
             margin: 0 auto;
             gap: 24px;
+        }
+        
+        .header-left {
+            min-width: 200px;
+            flex-shrink: 0;
         }
 
         .header-content h1 {
@@ -801,10 +1230,8 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .search-container {
-            flex: 1;
-            max-width: 600px;
-            margin: 0 auto;
             position: relative;
+            margin-right: 20px;
         }
 
         .search-container input {
@@ -835,19 +1262,71 @@ if ($_SESSION['role_id'] == 1) {
 
         .search-icon {
             position: absolute;
-            left: 10px;
+            left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9ca3af;
-            font-size: 13px;
+            color: #888;
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title i {
+            font-size: 20px;
+            color: #FF7F50;
+            background: rgba(255, 127, 80, 0.1);
+            padding: 8px;
+            border-radius: 8px;
         }
 
         .header-content h1 {
-            font-size: 18px;
-            color: #1a1a1a;
-            font-weight: 500;
+            font-size: 20px;
+            color: #000000 !important;
+            font-weight: 600;
             margin: 0;
             font-family: 'Inter', sans-serif;
+            letter-spacing: -0.5px;
+        }
+
+        [data-theme="dark"] .header-content h1 {
+            color: #FFFFFF !important;
+        }
+
+        .enhanced-search {
+            width: 800px !important;
+            padding: 8px 12px 8px 38px !important;
+            border: 2px solid transparent !important;
+            border-radius: 50px !important;
+            font-size: 14px !important;
+            color: var(--text-primary) !important;
+            background: var(--bg-tertiary) !important;
+
+        }
+
+        [data-theme="dark"] .enhanced-search {
+            background: #2d303a !important;
+            color: rgba(255, 255, 255, 0.9) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 8px rgba(255, 127, 80, 0.08) !important;
+            margin-right: 300px !important;
+        }
+
+        .enhanced-search:focus {
+            background: #ffffff !important;
+            border-color: rgba(255, 127, 80, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.12) !important;
+        }
+
+        .enhanced-search:hover {
+            background: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.15) !important;
         }
 
         .profile-section {
@@ -864,7 +1343,15 @@ if ($_SESSION['role_id'] == 1) {
             padding: 4px 12px 4px 4px;
             border-radius: 24px;
             transition: all 0.2s ease;
-            background-color: #fff5f0;
+            background-color: var(--bg-tertiary);
+        }
+
+        [data-theme="dark"] .profile-info {
+            background-color: #2d303a;
+        }
+
+        [data-theme="dark"] .admin-name {
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .profile-info:hover {
@@ -887,12 +1374,18 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .admin-name {
-            font-size: 13px;
-            color: #333;
-            font-weight: 500;
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 600;
             font-family: 'Inter', sans-serif;
             margin-left: 4px;
             white-space: nowrap;
+            letter-spacing: 0.2px;
+            text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+        }
+        [data-theme="dark"] .admin-name {
+            color: #ffffff;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         }
 
         /* Section Styles */
@@ -922,6 +1415,10 @@ if ($_SESSION['role_id'] == 1) {
             padding: 25px;
             margin: 20px;
         }
+
+        [data-theme="dark"] .content-section {
+            background: #2a2d3a;
+        }
         .content-section.active {
             display: block;
         }
@@ -933,7 +1430,7 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .notification {
-            background: white;
+            background: #2a2d3a;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             margin-bottom: 10px;
@@ -1030,6 +1527,39 @@ if ($_SESSION['role_id'] == 1) {
             animation: progress 3s linear;
         }
 
+        /* Theme Toggle Styles */
+        .theme-toggle {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: none;
+            border: none;
+            padding: 0;
+            margin-left: 15px;
+            margin-right: 15px;
+            line-height: 1;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-toggle i {
+            font-size: 20px;
+            color: #FF7F50;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(255, 127, 80, 0.2));
+            display: inline-block;
+            line-height: 1;
+        }
+
+        [data-theme="dark"] .theme-toggle i {
+            color: #FF7F50;
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
         @keyframes progress {
             from { width: 100%; }
             to { width: 0%; }
@@ -1041,6 +1571,127 @@ if ($_SESSION['role_id'] == 1) {
 </head>
 <body>
     <div id="notificationContainer"></div>
+
+    <!-- Out of Stock Top Notification -->
+    <div id="outOfStockAlert" class="alert-modal">
+        <div class="alert-content">
+            <div class="alert-header">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Out of Stock Items Alert</span>
+            </div>
+            <div id="outOfStockList">
+                <!-- Items will be inserted here dynamically -->
+            </div>
+        </div>
+        <button onclick="closeOutOfStockModal()" class="alert-button">
+            Acknowledge
+        </button>
+    </div>
+
+    <style>
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 400px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        [data-theme="dark"] .alert-modal {
+            background: #2a2d3a;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .alert-content {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        [data-theme="dark"] .alert-content {
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            gap: 8px;
+        }
+
+        .alert-header i {
+            color: #FF7F50;
+        }
+
+        .alert-header span {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        [data-theme="dark"] .alert-header span {
+            color: rgba(255,255,255,0.9);
+        }
+
+        #outOfStockList {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            color: #4a5568;
+        }
+
+        [data-theme="dark"] #outOfStockList {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .alert-button {
+            width: 100%;
+            border: none;
+            padding: 8px;
+            background: #FF7F50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .alert-button:hover {
+            background: #ff6b3d;
+        }
+
+        /* Success notification styling */
+        .notification.success {
+            background-color: #ffffff;
+            border-left: 4px solid #4CAF50;
+        }
+
+        [data-theme="dark"] .notification.success {
+            background-color: #2a2d3a;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .notification-title {
+            color: #1a1a1a;
+        }
+
+        [data-theme="dark"] .notification-title {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .notification-message {
+            color: #4a5568;
+        }
+
+        [data-theme="dark"] .notification-message {
+            color: rgba(255,255,255,0.7);
+        }
+    </style>
     <div class="sidebar">
         <div class="sidebar-header">
             <img src="../images/logo.png" alt="Logo" class="logo">
@@ -1088,7 +1739,7 @@ if ($_SESSION['role_id'] == 1) {
                     <span>Inventory</span>
                 </a>
             </li>
-            <li class="menu-item" id="menu-item">
+            <li class="menu-item" id="menu-creation-item">
                 <a href="#" data-section="menu-creation">
                     <i class="fas fa-utensils"></i>
                     <span>Menu Creation</span>
@@ -1101,7 +1752,7 @@ if ($_SESSION['role_id'] == 1) {
             <li class="menu-item" id="reports-item">
                 <a href="#" data-section="reports">
                     <i class="fas fa-chart-line"></i>
-                    <span>Reports</span>
+                    <span>Reports & Analytics</span>
                 </a>
             </li>
             <li class="menu-item" id="orders-item">
@@ -1115,20 +1766,46 @@ if ($_SESSION['role_id'] == 1) {
 
             <!-- Logout -->
             <li class="menu-item">
-                <a href="../logout.php">
+                <a href="#" onclick="handleLogout(event)" style="cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
             </li>
         </ul>
     </div>
-    <div class="main-content">
+    <div id="pageOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 999;"></div>
+    <div class="main-content" id="mainContent">
         <header class="main-header">
             <div class="header-content">
-                <h1>Dashboard</h1>
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" placeholder="Search...">
+                <div class="header-left">
+                    <div class="header-title" id="section-title">
+                        <i class="fas fa-chart-pie dashboard-icon"></i>
+                        <h1>Dashboard</h1>
+                    </div>
+                </div>
+                <div class="search-container" style="position: relative; margin: 0 auto;">
+                    <i class="fas fa-search search-icon" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; font-size: 14px;"></i>
+                    <input type="text" placeholder="Search anything..." class="enhanced-search" style="width: 600px !important; padding-left: 40px;">
+                </div>
+                <div class="notification-icon" style="margin-left: 20px; position: relative; cursor: pointer;" onclick="toggleNotifications()">
+                    <i class="fas fa-bell" style="font-size: 20px; color: #FF7F50; filter: drop-shadow(0 2px 4px rgba(255, 127, 80, 0.2));"></i>
+                    <span id="notifCount" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background: #FF7F50; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(255, 127, 80, 0.2);">0</span>
+                </div>
+                <!-- Dark Mode Toggle -->
+                <div class="theme-toggle" onclick="toggleDarkMode()">
+                    <i class="fas fa-sun" id="themeIcon"></i>
+                </div>
+                <!-- Notification Dropdown -->
+                <div id="notificationDropdown" style="display: none; position: absolute; top: 50px; right: 20px; width: 320px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000;">
+                    <div style="padding: 15px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 600; color: #333;">Stock Notifications</div>
+                            <button onclick="markAllAsRead()" id="markAllBtn" style="padding: 4px 8px; font-size: 12px; color: #FF7F50; background: none; border: 1px solid #FF7F50; border-radius: 4px; cursor: pointer; display: none;">Mark all as read</button>
+                        </div>
+                    </div>
+                    <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Notifications will be inserted here -->
+                    </div>
                 </div>
                 <div class="profile-section">
                     <a href="profile.php" class="profile-info" style="text-decoration: none; cursor: pointer;">
@@ -1176,7 +1853,7 @@ if ($_SESSION['role_id'] == 1) {
 
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
+                        <i class="fas fa-peso-sign"></i>
                     </div>
                     <div class="stat-info">
                         <?php
@@ -1285,11 +1962,11 @@ if ($_SESSION['role_id'] == 1) {
                         <h3>Order Statistics</h3>
                         <div class="chart-legend">
                             <span class="legend-item">
-                                <span class="legend-color completed"></span>
+                                <span class="legend-color" style="background: #FF7F50;"></span>
                                 Completed
                             </span>
                             <span class="legend-item">
-                                <span class="legend-color pending"></span>
+                                <span class="legend-color" style="background: #FFB75E;"></span>
                                 Pending
                             </span>
                         </div>
@@ -1300,16 +1977,16 @@ if ($_SESSION['role_id'] == 1) {
                         $completed_orders = mysqli_query($conn, "SELECT COUNT(*) as completed FROM orders WHERE status = 'completed'");
                         $total_count = mysqli_fetch_assoc($total_orders)['total'];
                         $completed_count = mysqli_fetch_assoc($completed_orders)['completed'];
-                        $completion_rate = $total_count > 0 ? ($completed_count / $total_count) * 100 : 0;
+                        $completion_rate = $total_count > 0 ? round(($completed_count / $total_count) * 100, 1) : 0;
                         ?>
-                        <div class="progress-circle">
-                            <svg>
-                                <circle class="progress-background" cx="80" cy="80" r="70"></circle>
-                                <circle class="progress-bar" cx="80" cy="80" r="70" style="stroke-dashoffset: <?php echo 440 * (1 - $completion_rate/100); ?>"></circle>
-                            </svg>
-                            <div class="progress-content">
-                                <h4><?php echo round($completion_rate); ?>%</h4>
-                                <p>Completion Rate</p>
+                        <div class="completion-chart">
+                            <div class="pie-chart-container">
+                                <div class="pie-chart" style="background: conic-gradient(#FF7F50 <?php echo $completion_rate; ?>%, #FFB75E 0)">
+                                    <div class="pie-center">
+                                        <span class="completion-percentage"><?php echo round($completion_rate); ?>%</span>
+                                        <span class="completion-label">Completion<br>Rate</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1318,10 +1995,7 @@ if ($_SESSION['role_id'] == 1) {
 
             <!-- Recent Orders Table -->
             <div class="recent-orders">
-                <div class="section-header">
-                    <h3>Recent Orders</h3>
-                    <a href="#" onclick="showSection('orders')" class="view-all">View All</a>
-                </div>
+               
                 <div class="orders-table-wrapper">
                     <table class="dashboard-orders-table">
                         <thead>
@@ -1355,11 +2029,6 @@ if ($_SESSION['role_id'] == 1) {
 
         <!-- Inventory Section -->
         <section id="inventory-section" class="content-section hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-boxes"></i> Inventory Management</h2>
-                <p class="section-description">Monitor and manage product inventory</p>
-            </div>
-
             <?php
             // Calculate inventory statistics
             $total_products = mysqli_query($conn, "SELECT COUNT(*) as total FROM products");
@@ -1439,23 +2108,153 @@ if ($_SESSION['role_id'] == 1) {
             </div>
 
             <!-- Inventory Table -->
-            <div class="inventory-table-container">
-                <div class="table-header">
+            <div class="inventory-table-container" style="margin-top: 0; position: relative;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to right, #FFB75E, #FF7F50);"></div>
+                <div class="table-header" style="margin-top: 5px; height: 50px; padding: 0.75rem 1rem;">
                     <div class="table-title">
-                        <h3 style="font-size: 16px; font-weight: 500; color: #333;">Product Inventory</h3>
+                        <h3 style="font-size: 18px; font-weight: 600; color: #333; margin: 0; white-space: nowrap;">Product Inventory</h3>
                     </div>
-                    <div class="search-filter-group">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="inventorySearch" placeholder="Search products...">
+                    <div class="inventory-filters" style="padding: 12px; display: flex; align-items: center; position: relative; margin-bottom: 15px;">
+                        <div class="search-box" style="position: relative; margin: 0 150px 0 auto;">
+                            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; font-size: 14px;"></i>
+                            <input type="text" id="inventorySearch" placeholder="Search products..." style="box-shadow: 0 2px 15px rgba(255, 183, 94, 0.2); border-radius: 50px; width: 600px; padding-left: 40px;">
                         </div>
-                        <select id="categoryFilter" class="category-filter">
-                            <option value="all">All Categories</option>
-                            <option value="Main Dishes">Main Dishes</option>
-                            <option value="Side Dishes">Side Dishes</option>
-                            <option value="Desserts">Desserts</option>
-                        </select>
+                        <div class="filter-group" style="margin-left: auto; padding-right: 20px;">
+                            <select id="categoryFilter" class="filter-select">
+                                <option value="all">All Categories</option>
+                                <option value="Main Dishes">Main Dishes</option>
+                                <option value="Side Dishes">Side Dishes</option>
+                                <option value="Desserts">Desserts</option>
+                            </select>
+                            <select id="statusFilter" class="filter-select">
+                                <option value="all">All Status</option>
+                                <option value="out">Out of Stock</option>
+                                <option value="low">Low Stock (≤10)</option>
+                                <option value="critical">Critical Stock (≤5)</option>
+                                <option value="in">In Stock</option>
+                            </select>
+                        </div>
                     </div>
+
+                    <style>
+                        /* Enhanced Inventory Filters */
+                        .inventory-filters {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin-bottom: 16px;
+                            padding: 0;
+                            background: transparent;
+                            gap: 16px;
+                            width: 100%;
+                        }
+
+                        .search-box {
+                            position: relative;
+                            width: 800px;
+                            margin-right: 300px;
+                            background: #FFFFFF;
+                        }
+
+                        .search-box input {
+                            width: 100%;
+                            height: 32px;
+                            padding: 6px 16px 6px 36px;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 50px;
+                            font-size: 13px;
+                            background: #ffffff;
+                            color: #555;
+                            transition: all 0.2s ease;
+                        }
+
+                        .search-box input::placeholder {
+                            color: #888;
+                        }
+
+                        .search-box i {
+                            position: absolute;
+                            left: 16px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            color: #888;
+                            font-size: 15px;
+                        }
+
+                        .search-box input:hover {
+                            border-color: #FFB75E;
+                            background: linear-gradient(to right, #ffffff, #fff0e6);
+                            box-shadow: 0 2px 15px rgba(255, 183, 94, 0.3);
+                        }
+
+                        .search-box input:focus {
+                            outline: none;
+                            border-color: #FF7F50;
+                            background: linear-gradient(to right, #ffffff, #ffe4d9);
+                            box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.1);
+                        }
+
+                        #inventorySearch {
+                            width: 600px !important;
+                            border-radius: 50px !important;
+                            height: 32px;
+                            padding: 6px 16px 6px 36px;
+                            border: 1px solid #e5e7eb;
+                            font-size: 13px;
+                            background: #ffffff;
+                            color: #555;
+                            transition: all 0.2s ease;
+                            margin-right: 300px;
+                            box-shadow: 0 2px 15px rgba(255, 183, 94, 0.2);
+                        }
+
+                        .search-box i {
+                            position: absolute;
+                            left: 12px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            color: #FF7F50;
+                            opacity: 0.7;
+                            font-size: 13px;
+                        }
+
+                        .filter-group {
+                            display: flex;
+                            gap: 12px;
+                            align-items: center;
+                            flex-shrink: 0;
+                            margin-left: auto;
+                            padding-right: 20px;
+                        }
+
+                        .filter-select {
+                            height: 32px;
+                            padding: 0 28px 0 12px;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 20px;
+                            font-size: 13px;
+                            color: #666;
+                            background: #ffffff;
+                            cursor: pointer;
+                            appearance: none;
+                            min-width: 120px;
+                            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 16 16'%3E%3Cpath fill='%23FF7F50' d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+                            background-repeat: no-repeat;
+                            background-position: calc(100% - 10px) center;
+                            transition: all 0.2s ease;
+                        }
+
+                        .filter-select:hover {
+                            border-color: #FF7F50;
+                            box-shadow: 0 0 0 4px rgba(255, 127, 80, 0.1);
+                        }
+
+                        .filter-select:focus {
+                            outline: none;
+                            border-color: #FF7F50;
+                            box-shadow: 0 0 0 4px rgba(255, 127, 80, 0.15);
+                        }
+                    </style>
                 </div>
 
                 <div class="table-responsive">
@@ -1546,10 +2345,7 @@ if ($_SESSION['role_id'] == 1) {
 
         <!-- Menu Creation Section -->
         <section id="menu-creation-section" class="content-section hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-utensils"></i> Menu Creation</h2>
-                <p class="section-description">Manage your restaurant's menu items and products</p>
-            </div>
+            
             <?php if(isset($message) && is_array($message)): ?>
                 <?php foreach($message as $msg): ?>
                     <script>
@@ -1689,6 +2485,18 @@ if ($_SESSION['role_id'] == 1) {
             </div>
         </section>
 
+        <?php
+        // Handle menu update notifications
+        if (isset($_GET['section']) && $_GET['section'] === 'menu-creation' && isset($_GET['action'])) {
+            $action = $_GET['action'];
+            if ($action === 'update') {
+                echo "<script>alert('Product updated successfully');</script>";
+            } else if ($action === 'error') {
+                echo "<script>alert('Error: Product could not be updated');</script>";
+            }
+        }
+        ?>
+        
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
             <div class="welcome-header">
@@ -1700,16 +2508,40 @@ if ($_SESSION['role_id'] == 1) {
         <!-- User Roles Section -->
         <section id="roles-section" class="content-section hidden">
             <?php
-            if (isset($_SESSION['message'])) {
-                echo "<script>showNotification('Notification', '{$_SESSION['message']}', '{$_SESSION['message_type']}');</script>";
-                unset($_SESSION['message']);
-                unset($_SESSION['message_type']);
+            // Handle login state and notifications
+            if (!isset($_SESSION['notifications_initialized'])) {
+                // Initialize notification state
+                $_SESSION['notifications_initialized'] = true;
+                $_SESSION['last_notification_time'] = 0;
+            }
+
+            // Check if this is a fresh login (within last 5 seconds)
+            $isFreshLogin = isset($_SESSION['login_timestamp']) && 
+                           (time() - $_SESSION['login_timestamp']) <= 5;
+
+            // Handle dashboard redirect on fresh login
+            if (isset($_SESSION['show_dashboard']) && $_SESSION['show_dashboard'] === true) {
+                echo "<script>
+                    sessionStorage.removeItem('currentSection');
+                    showSection('dashboard-section');
+                </script>";
+                unset($_SESSION['show_dashboard']);
+            }
+
+            // Show welcome message only on fresh login
+            if ($isFreshLogin && !isset($_SESSION['welcome_shown'])) {
+                if (isset($_SESSION['message'])) {
+                    echo "<script>
+                        alert('Welcome back! You have successfully logged in.');
+                    </script>";
+                    unset($_SESSION['message']);
+                    unset($_SESSION['message_type']);
+                }
+                $_SESSION['welcome_shown'] = true;
             }
             ?>
-            <div class="section-header">
-                <h2><i class="fas fa-user-shield"></i> User Roles</h2>
-                <p class="section-description">Manage and assign different user roles in the system</p>
-            </div>
+            
+           
 
             <div class="role-cards">
                 <div class="role-card">
@@ -1856,12 +2688,447 @@ if ($_SESSION['role_id'] == 1) {
             </div>
         </section>
 
+        <!-- Landing Settings Section -->
+        <section id="landing-section" class="content-section hidden">
+            
+
+            <div class="settings-grid">
+                <!-- Restaurant Branding -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-store"></i> Restaurant Branding</h3>
+                    <div class="form-group">
+                        <label>Restaurant Name</label>
+                        <input type="text" class="settings-input" id="restaurantName" placeholder="K-Food Delight">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Logo</label>
+                        <div class="upload-container">
+                            <img id="logoPreview" src="../images/logo.png" alt="Logo Preview">
+                            <input type="file" id="logoUpload" accept="image/*" class="file-input">
+                            <div class="upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Drop logo here or <span class="browse-text">browse</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Favicon</label>
+                        <div class="upload-container small">
+                            <img id="faviconPreview" src="../images/logo.png" alt="Favicon Preview">
+                            <input type="file" id="faviconUpload" accept="image/*" class="file-input">
+                            <div class="upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Drop favicon or <span class="browse-text">browse</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tagline</label>
+                        <textarea class="settings-input" id="tagline" placeholder="Enter your restaurant's tagline"></textarea>
+                    </div>
+                </div>
+
+                <!-- Hero Section -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-image"></i> Hero Section</h3>
+                    <div class="form-group">
+                        <label>Hero Title</label>
+                        <input type="text" class="settings-input" id="heroTitle" placeholder="K-FOOD DELIGHTS">
+                    </div>
+                    <div class="form-group">
+                        <label>Hero Subtitle</label>
+                        <textarea class="settings-input" id="heroSubtitle" placeholder="Experience authentic Korean cuisine..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Background Image</label>
+                        <div class="upload-container hero">
+                            <img id="heroPreview" src="../images/lasagna.jpg" alt="Hero Preview">
+                            <input type="file" id="heroUpload" accept="image/*" class="file-input">
+                            <div class="upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Drop hero image or <span class="browse-text">browse</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Us Section -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-info-circle"></i> About Us Section</h3>
+                    <div class="form-group">
+                        <label>Restaurant Story</label>
+                        <textarea class="settings-input" id="aboutUs" rows="5" placeholder="Tell your restaurant's story..."></textarea>
+                    </div>
+                    <div class="features-container">
+                        <label>Features</label>
+                        <div id="featuresList" class="features-list">
+                            <!-- Features will be added here -->
+                        </div>
+                        <button type="button" class="add-feature-btn" onclick="addFeature()">
+                            <i class="fas fa-plus"></i> Add Feature
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contact & Footer -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-address-book"></i> Contact & Footer</h3>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea class="settings-input" id="address" placeholder="Your restaurant's address"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Phone</label>
+                            <input type="tel" class="settings-input" id="phone" placeholder="Contact number">
+                        </div>
+                        <div class="form-group half">
+                            <label>Email</label>
+                            <input type="email" class="settings-input" id="email" placeholder="Contact email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Operating Hours</label>
+                        <textarea class="settings-input" id="hours" placeholder="e.g., Mon-Fri: 9AM-10PM"></textarea>
+                    </div>
+                    <div class="social-links">
+                        <label>Social Media Links</label>
+                        <div class="form-group">
+                            <div class="social-input">
+                                <i class="fab fa-facebook"></i>
+                                <input type="url" class="settings-input" id="facebook" placeholder="Facebook URL">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="social-input">
+                                <i class="fab fa-instagram"></i>
+                                <input type="url" class="settings-input" id="instagram" placeholder="Instagram URL">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="social-input">
+                                <i class="fab fa-tiktok"></i>
+                                <input type="url" class="settings-input" id="tiktok" placeholder="TikTok URL">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme & Design -->
+                <div class="settings-card span-2">
+                    <h3><i class="fas fa-paint-brush"></i> Theme & Design</h3>
+                    <div class="form-row">
+                        <div class="form-group third">
+                            <label>Primary Color</label>
+                            <input type="color" class="color-picker" id="primaryColor" value="#FF7F50">
+                        </div>
+                        <div class="form-group third">
+                            <label>Secondary Color</label>
+                            <input type="color" class="color-picker" id="secondaryColor" value="#FFB75E">
+                        </div>
+                        <div class="form-group third">
+                            <label>Font Style</label>
+                            <select class="settings-input" id="fontStyle">
+                                <option value="Poppins">Poppins</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Montserrat">Montserrat</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Layout Style</label>
+                            <select class="settings-input" id="layoutStyle">
+                                <option value="centered">Centered</option>
+                                <option value="full-width">Full Width</option>
+                                <option value="boxed">Boxed</option>
+                            </select>
+                        </div>
+                        <div class="form-group half">
+                            <label>Newsletter Signup</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="newsletterToggle">
+                                <label for="newsletterToggle"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="save-section">
+                <button type="button" class="save-settings" onclick="saveLandingSettings()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+
+            <style>
+                /* Landing Settings Styles */
+                .settings-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 20px;
+                    padding: 20px;
+                }
+
+                .settings-card {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+
+                .settings-card.span-2 {
+                    grid-column: span 2;
+                }
+
+                .settings-card h3 {
+                    color: #333;
+                    font-size: 18px;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .settings-card h3 i {
+                    color: #FF7F50;
+                }
+
+                .form-group {
+                    margin-bottom: 20px;
+                }
+
+                .form-row {
+                    display: flex;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+
+                .form-group.half {
+                    flex: 1;
+                }
+
+                .form-group.third {
+                    flex: 1;
+                }
+
+                label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #555;
+                    font-weight: 500;
+                }
+
+                .settings-input {
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                }
+
+                .settings-input:focus {
+                    border-color: #FF7F50;
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.1);
+                }
+
+                textarea.settings-input {
+                    resize: vertical;
+                    min-height: 80px;
+                }
+
+                .upload-container {
+                    border: 2px dashed #ddd;
+                    border-radius: 8px;
+                    padding: 20px;
+                    text-align: center;
+                    position: relative;
+                    transition: all 0.3s ease;
+                }
+
+                .upload-container:hover {
+                    border-color: #FF7F50;
+                }
+
+                .upload-container.small {
+                    padding: 10px;
+                }
+
+                .upload-container.hero {
+                    aspect-ratio: 16/9;
+                }
+
+                .upload-container img {
+                    max-width: 100%;
+                    max-height: 200px;
+                    object-fit: contain;
+                    margin-bottom: 10px;
+                }
+
+                .upload-container.small img {
+                    max-height: 60px;
+                }
+
+                .upload-container.hero img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .file-input {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0;
+                    cursor: pointer;
+                }
+
+                .upload-label {
+                    color: #666;
+                }
+
+                .upload-label i {
+                    font-size: 24px;
+                    color: #FF7F50;
+                    margin-bottom: 8px;
+                }
+
+                .browse-text {
+                    color: #FF7F50;
+                    text-decoration: underline;
+                    cursor: pointer;
+                }
+
+                .features-list {
+                    margin: 10px 0;
+                }
+
+                .feature-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 10px;
+                }
+
+                .add-feature-btn {
+                    background: none;
+                    border: 1px dashed #FF7F50;
+                    color: #FF7F50;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .add-feature-btn:hover {
+                    background: rgba(255, 127, 80, 0.1);
+                }
+
+                .social-input {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .social-input i {
+                    font-size: 20px;
+                    color: #FF7F50;
+                    width: 24px;
+                }
+
+                .color-picker {
+                    width: 100%;
+                    height: 40px;
+                    padding: 0;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                }
+
+                .toggle-switch {
+                    position: relative;
+                    display: inline-block;
+                    width: 60px;
+                    height: 34px;
+                }
+
+                .toggle-switch input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+
+                .toggle-switch label {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: #ccc;
+                    transition: .4s;
+                    border-radius: 34px;
+                }
+
+                .toggle-switch label:before {
+                    position: absolute;
+                    content: "";
+                    height: 26px;
+                    width: 26px;
+                    left: 4px;
+                    bottom: 4px;
+                    background-color: white;
+                    transition: .4s;
+                    border-radius: 50%;
+                }
+
+                .toggle-switch input:checked + label {
+                    background-color: #FF7F50;
+                }
+
+                .toggle-switch input:checked + label:before {
+                    transform: translateX(26px);
+                }
+
+                .save-section {
+                    padding: 20px;
+                    text-align: right;
+                }
+
+                .save-settings {
+                    background: #FF7F50;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .save-settings:hover {
+                    background: #ff6b3d;
+                    transform: translateY(-1px);
+                }
+
+                .save-settings:active {
+                    transform: translateY(0);
+                }
+            </style>
+        </section>
+
         <!-- User Accounts Section -->
         <section id="accounts-section" class="content-section hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-users-cog"></i> User Accounts</h2>
-                <p class="section-description">Manage all user accounts and their permissions in the system</p>
-            </div>
+          
 
             <!-- Users Table -->
             <div class="users-table-container">
@@ -1869,7 +3136,7 @@ if ($_SESSION['role_id'] == 1) {
                 <div class="table-actions">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="userSearch" placeholder="Search users...">
+                        <input type="text" id="userSearch" placeholder="Search users..." style="width: 300px;">
                     </div>
                     <select id="roleFilter" class="role-filter">
                         <option value="all">All Roles</option>
@@ -1881,18 +3148,175 @@ if ($_SESSION['role_id'] == 1) {
                 <style>
                 .table-responsive {
                     overflow-x: auto;
+                    border-radius: 8px;
+                    background: #ffffff;
+                    transition: background-color 0.3s ease;
                 }
                 .users-table {
                     font-size: 14px;
                     width: 100%;
                     min-width: 1200px;
+                    background: transparent;
                 }
                 .users-table th, .users-table td {
-                    padding: 8px 12px;
+                    padding: 12px 16px;
                     white-space: nowrap;
                     max-width: 200px;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    transition: all 0.3s ease;
+                }
+
+                [data-theme="dark"] .table-responsive {
+                    background: #262833;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+
+                [data-theme="dark"] .users-table {
+                    border-collapse: separate;
+                    border-spacing: 0 4px;
+                    margin-top: -4px;
+                }
+
+                [data-theme="dark"] .users-table th {
+                    background: #1E1E2D;
+                    color: rgba(255, 255, 255, 0.9) !important;
+                    font-weight: 500;
+                    padding: 12px 16px;
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    border: none;
+                }
+
+                [data-theme="dark"] .users-table td {
+                    background: #1A1B25;
+                    color: rgba(255, 255, 255, 0.8);
+                    padding: 16px;
+                    border: none;
+                }
+
+                [data-theme="dark"] .users-table tr td:first-child {
+                    border-top-left-radius: 8px;
+                    border-bottom-left-radius: 8px;
+                }
+
+                [data-theme="dark"] .users-table tr td:last-child {
+                    border-top-right-radius: 8px;
+                    border-bottom-right-radius: 8px;
+                }
+
+                [data-theme="dark"] .users-table tr:hover td {
+                    background: #1E1E2D;
+                    transition: background-color 0.2s ease;
+                }
+
+                [data-theme="dark"] .role-badge {
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                }
+
+                [data-theme="dark"] .role-badge.role-2 {
+                    background: rgba(255, 127, 80, 0.15);
+                    color: #FF7F50;
+                }
+
+                [data-theme="dark"] .role-badge.role-3 {
+                    background: rgba(99, 102, 241, 0.15);
+                    color: #818cf8;
+                }
+
+                [data-theme="dark"] .role-badge.role-4 {
+                    background: rgba(16, 185, 129, 0.15);
+                    color: #10b981;
+                }
+
+                .users-table-container {
+                    position: relative;
+                    padding: 24px;
+                    border-radius: 12px;
+                    margin: 15px 0;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                }
+
+                [data-theme="dark"] .users-table-container {
+                    background: #1A1B25;
+                    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.1);
+                }
+
+                .users-table-container::before {
+                    content: '';
+                    position: absolute;
+                    top: -1px;
+                    left: -1px;
+                    right: -1px;
+                    height: 3px;
+                    background: linear-gradient(90deg, #FF7F50, #FFB75E);
+                    border-radius: 12px 12px 0 0;
+                }
+
+                [data-theme="dark"] .users-table-container h3 {
+                    color: #ffffff;
+                    margin-bottom: 24px;
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    letter-spacing: 0.3px;
+                }
+
+                .table-actions {
+                    margin-bottom: 20px;
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                }
+
+                [data-theme="dark"] .table-actions input,
+                [data-theme="dark"] .table-actions select {
+                    background: #151521;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    color: #ffffff;
+                    border-radius: 8px;
+                    padding: 10px 15px;
+                }
+
+                [data-theme="dark"] .table-responsive {
+                    background: transparent;
+                }
+
+                [data-theme="dark"] .role-badge.role-2 {
+                    background: rgba(255, 127, 80, 0.2);
+                    color: #FFB75E;
+                }
+
+                [data-theme="dark"] .role-badge {
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                }
+
+                [data-theme="dark"] .search-box input {
+                    background: #151521;
+                    border: 1px solid #2B2B40;
+                    color: #ffffff;
+                    border-radius: 6px;
+                    padding: 10px 15px 10px 40px;
+                }
+
+                [data-theme="dark"] .search-box i {
+                    color: #ffffff;
+                }
+
+                [data-theme="dark"] .role-filter {
+                    background: #151521;
+                    border: 1px solid #2B2B40;
+                    color: #ffffff;
+                    border-radius: 6px;
+                    padding: 10px 15px;
+                }
+
+                [data-theme="dark"] .users-table-container h3 {
+                    color: #ffffff;
                 }
                 .users-table td img {
                     display: block;
@@ -1975,10 +3399,7 @@ if ($_SESSION['role_id'] == 1) {
 
         <!-- Orders Section -->
         <section id="orders-section" class="content-section hidden">
-            <div class="section-header">
-                <h2><i class="fas fa-shopping-bag"></i> Orders Management</h2>
-                <p class="section-description">View and manage customer orders</p>
-            </div>
+            
 
             <div class="orders-container">
                 <!-- Order Filters -->
@@ -2422,7 +3843,54 @@ if ($_SESSION['role_id'] == 1) {
 
     <script>
         // Notification function
+        // Function to update section title and icon
+        function updateSectionTitle(section) {
+            const titleElement = document.querySelector('.header-title h1');
+            const iconElement = document.querySelector('.header-title i');
+            
+            // Define section titles and icons
+            const sectionInfo = {
+                'dashboard': { title: 'Dashboard', icon: 'fas fa-chart-pie' },
+                'inventory': { title: 'Inventory Management', icon: 'fas fa-boxes' },
+                'menu-creation': { title: 'Menu Creation', icon: 'fas fa-utensils' },
+                'roles': { title: 'User Roles', icon: 'fas fa-user-shield' },
+                'accounts': { title: 'User Accounts', icon: 'fas fa-users-cog' },
+                'reports': { title: 'Reports & Analytics', icon: 'fas fa-chart-line' },
+                'orders': { title: 'Order Management', icon: 'fas fa-shopping-basket' },
+                'landing': { title: 'Landing Settings', icon: 'fas fa-home' }
+            };
+
+            // Store the current section in sessionStorage
+            sessionStorage.setItem('currentSection', section);
+
+            const info = sectionInfo[section] || sectionInfo['dashboard'];
+            
+            // Update title and icon
+            titleElement.textContent = info.title;
+            iconElement.className = info.icon;
+        }
+
+        // Add event listeners to menu items
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.getAttribute('data-section');
+                    if (section) {
+                        updateSectionTitle(section);
+                    }
+                });
+            });
+        });
+
         function showNotification(title, message, type = 'info') {
+            // Check if this is a fresh page load without any action parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('action')) {
+                return; // Don't show notifications if this is a redirect with action
+            }
+            
             const container = document.getElementById('notificationContainer');
             if (!container) {
                 console.error('Notification container not found');
@@ -2525,26 +3993,50 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         function showSection(sectionId) {
-            // Remove active class from all sections and menu items
+            // Map section IDs to their corresponding icons and titles
+            const sectionMap = {
+                'dashboard': { icon: 'chart-pie', title: 'Dashboard' },
+                'inventory': { icon: 'boxes', title: 'Inventory Management' },
+                'menu-creation': { icon: 'utensils', title: 'Menu Creation' },
+                'orders': { icon: 'shopping-cart', title: 'Orders' },
+                'roles': { icon: 'user-shield', title: 'User Roles' },
+                'accounts': { icon: 'users-cog', title: 'User Accounts' },
+                'landing': { icon: 'home', title: 'Landing Settings' },
+                'reports': { icon: 'chart-line', title: 'Reports & Analytics' }
+            };
+
+            // Get section info
+            const sectionInfo = sectionMap[sectionId] || sectionMap['dashboard'];
+
+            // Update header title - IMPORTANT: This must be done first
+            const headerTitleDiv = document.getElementById('section-title');
+            if (headerTitleDiv) {
+                headerTitleDiv.innerHTML = `
+                    <i class="fas fa-${sectionInfo.icon}"></i>
+                    <h1>${sectionInfo.title}</h1>
+                `;
+                headerTitleDiv.style.display = 'flex';
+            }
+
+            // Remove active class from all sections and hide them
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
                 section.style.display = 'none';
             });
             
+            // Remove active class from all menu items
             document.querySelectorAll('.menu-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
-            // Add active class to clicked menu item
+
+            // Add active class to current menu item
             const menuItem = document.getElementById(`${sectionId}-item`);
             if (menuItem) {
                 menuItem.classList.add('active');
             }
             
-            // Append -section if it's not already there
+            // Show current section
             const fullSectionId = sectionId.endsWith('-section') ? sectionId : `${sectionId}-section`;
-            
-            // Show the selected section
             const sectionToShow = document.getElementById(fullSectionId);
             if (sectionToShow) {
                 sectionToShow.classList.add('active');
@@ -2613,27 +4105,39 @@ document.getElementById('stockUpdateForm')?.addEventListener('submit', function(
     });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const section = urlParams.get('section');
-            showSection(section || 'dashboard');
-        });
-
-        // Show menu creation section if there's an edit or delete operation
-        window.onload = function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const section = urlParams.get('section');
             
-            // Always show dashboard first unless a specific section is requested
-            if (section && section !== 'dashboard') {
-                showSection(section);
-            } else {
-                showSection('dashboard');
-                // Update URL to reflect dashboard state
+            // Get stored section from sessionStorage or default to dashboard
+            let storedSection = sessionStorage.getItem('currentSection');
+            if (!storedSection && !sessionStorage.getItem('initialized')) {
+                storedSection = 'dashboard-section';
+                sessionStorage.setItem('initialized', 'true');
+            }
+            const currentSection = section || storedSection || 'dashboard';
+            
+            // Show the appropriate section and update header
+            showSection(currentSection);
+            
+            // If no specific section is requested, update URL to dashboard
+            if (!section && !storedSection) {
                 const newUrl = window.location.pathname + '?section=dashboard';
                 window.history.pushState({ section: 'dashboard' }, '', newUrl);
             }
-        }
+
+            // Handle browser back/forward navigation
+            window.addEventListener('popstate', function(event) {
+                const params = new URLSearchParams(window.location.search);
+                const section = params.get('section') || 'dashboard';
+                showSection(section);
+            });            // Add popstate event listener to handle browser back/forward
+            window.addEventListener('popstate', function(event) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const section = urlParams.get('section') || 'dashboard';
+                showSection(section);
+            });
+        });
 
         function toggleDarkMode() {
             const settingsSection = document.getElementById('settings-section');
@@ -2980,5 +4484,636 @@ window.addEventListener('load', function() {
 });
 </script>
 
-</body>
+        <script>
+            function showOutOfStockModal() {
+                // Check if modal has already been shown in this session
+                if (sessionStorage.getItem('outOfStockModalShown')) {
+                    return;
+                }
+
+                const outOfStockList = document.getElementById('outOfStockList');
+                const tableRows = document.querySelectorAll('.inventory-table tbody tr');
+                let outOfStockItems = [];
+                
+                // Don't show overlay or blur until we confirm there are out-of-stock items
+
+                tableRows.forEach(row => {
+                    // Clean up the stock text and handle potential NaN values
+                    const stockText = row.querySelector('td:nth-child(4)').textContent.trim();
+                    const stock = parseInt(stockText);
+                    
+                    // Check if stock is actually 0 (not NaN) and add to outOfStockItems
+                    if (!isNaN(stock) && stock === 0) {
+                        const productName = row.querySelector('td:nth-child(2)').textContent.trim();
+                        const category = row.querySelector('td:nth-child(3)').textContent.trim();
+                        outOfStockItems.push({ name: productName, category: category });
+                    }
+                });
+
+                // Only show modal and effects if there are actually out of stock items
+                if (outOfStockItems.length > 0) {
+                    // Now show overlay and blur effects
+                    document.getElementById('pageOverlay').style.display = 'block';
+                    document.getElementById('mainContent').style.filter = 'blur(4px)';
+                    const alert = document.getElementById('outOfStockAlert');
+                    
+                    let listHTML = '';
+                    outOfStockItems.forEach(item => {
+                        listHTML += `
+                            <div style="padding: 8px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f0;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-weight: 500;">${item.name}</span>
+                                    <span style="color: #666; font-size: 0.9em;"> - ${item.category}</span>
+                                </div>
+                                <span style="color: #FF4444; font-size: 0.85em;">Out of Stock</span>
+                            </div>`;
+                    });
+                    outOfStockList.innerHTML = listHTML;
+                    alert.style.display = 'block';
+                }
+            }
+
+            function closeOutOfStockModal() {
+                const alert = document.getElementById('outOfStockAlert');
+                const overlay = document.getElementById('pageOverlay');
+                const mainContent = document.getElementById('mainContent');
+                
+                // Set flag in sessionStorage to prevent reshowing
+                sessionStorage.setItem('outOfStockModalShown', 'true');
+                
+                alert.style.opacity = '0';
+                overlay.style.opacity = '0';
+                mainContent.style.filter = 'none';
+                
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                    overlay.style.display = 'none';
+                    alert.style.opacity = '1';
+                    overlay.style.opacity = '1';
+                }, 300);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Show the modal when page loads
+                showOutOfStockModal();
+
+                const categoryFilter = document.getElementById('categoryFilter');
+                const statusFilter = document.getElementById('statusFilter');
+                const tableRows = document.querySelectorAll('.inventory-table tbody tr');
+
+                function filterTable() {
+                    const selectedCategory = categoryFilter.value;
+                    const selectedStatus = statusFilter.value;
+
+                    tableRows.forEach(row => {
+                        const category = row.querySelector('td:nth-child(3)').textContent.trim();
+                        const stockCell = row.querySelector('td:nth-child(4)');
+                        const statusCell = row.querySelector('td:nth-child(6) .status-badge');
+                        const stock = parseInt(stockCell.textContent);
+                        const status = statusCell.textContent.trim();
+
+                        let showRow = true;
+
+                        if (selectedCategory !== 'all' && category !== selectedCategory) {
+                            showRow = false;
+                        }
+
+                        if (selectedStatus !== 'all') {
+                            switch(selectedStatus) {
+                                case 'out':
+                                    if (status !== 'Out of Stock') showRow = false;
+                                    break;
+                                case 'low':
+                                    if (stock > 10 || stock <= 0) showRow = false;
+                                    break;
+                                case 'critical':
+                                    if (stock > 5 || stock <= 0) showRow = false;
+                                    break;
+                                case 'in':
+                                    if (stock <= 0) showRow = false;
+                                    break;
+                            }
+                        }
+
+                        row.style.display = showRow ? '' : 'none';
+                    });
+                }
+
+                categoryFilter.addEventListener('change', filterTable);
+                statusFilter.addEventListener('change', filterTable);
+
+                // Add search functionality
+                const searchInput = document.getElementById('inventorySearch');
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+
+                    tableRows.forEach(row => {
+                        const productName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                        const category = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                        const showRow = productName.includes(searchTerm) || category.includes(searchTerm);
+                        
+                        // Consider current filter selections
+                        if (showRow) {
+                            filterTable();
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            function handleLogout(event) {
+                event.preventDefault();
+                window.location.href = '../logout.php';
+            }
+
+            function toggleNotifications() {
+                const dropdown = document.getElementById('notificationDropdown');
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                if (dropdown.style.display === 'block') {
+                    updateNotifications();
+                }
+            }
+
+            // Store read notifications
+            let readNotifications = new Set();
+
+            function markAllAsRead() {
+                // Clear all notifications
+                document.getElementById('notifCount').style.display = 'none';
+                document.getElementById('notificationList').innerHTML = '<div style="padding: 15px; color: #666; text-align: center;">No new notifications</div>';
+                document.getElementById('markAllBtn').style.display = 'none';
+                
+                // Make an AJAX call to store read status in session
+                fetch('mark_notifications_read.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action: 'mark_all_read' })
+                });
+                
+                // Clear local notifications
+                readNotifications = new Set();
+                // Store in session storage to persist during page navigation
+                sessionStorage.setItem('notificationsRead', 'true');
+            }
+
+            function updateNotifications() {
+                // Check if notifications were marked as read
+                if (sessionStorage.getItem('notificationsRead') === 'true') {
+                    document.getElementById('notifCount').style.display = 'none';
+                    document.getElementById('notificationList').innerHTML = '<div style="padding: 15px; color: #666; text-align: center;">No new notifications</div>';
+                    document.getElementById('markAllBtn').style.display = 'none';
+                    return;
+                }
+
+                const tableRows = document.querySelectorAll('.inventory-table tbody tr');
+                let notifications = [];
+                let count = 0;
+
+                tableRows.forEach(row => {
+                    const productName = row.querySelector('td:nth-child(2)').textContent.trim();
+                    const category = row.querySelector('td:nth-child(3)').textContent.trim();
+                    const stock = parseInt(row.querySelector('td:nth-child(4)').textContent);
+                    
+                    if (stock === 0) {
+                        notifications.push({ name: productName, category: category, type: 'out', stock: stock });
+                        count++;
+                    } else if (stock <= 10 && stock > 0) {
+                        notifications.push({ name: productName, category: category, type: 'low', stock: stock });
+                        count++;
+                    }
+                });
+
+                // Update notification count
+                document.getElementById('notifCount').textContent = count;
+                
+                // Update notification list
+                const notificationList = document.getElementById('notificationList');
+                let listHTML = '';
+                
+                // Filter out read notifications
+                notifications = notifications.filter(item => !readNotifications.has(item.name));
+                
+                // Update notification count badge
+                const notifCount = document.getElementById('notifCount');
+                if (notifications.length > 0) {
+                    notifCount.textContent = notifications.length;
+                    notifCount.style.display = 'flex';
+                    document.getElementById('markAllBtn').style.display = 'block';
+                } else {
+                    notifCount.style.display = 'none';
+                    document.getElementById('markAllBtn').style.display = 'none';
+                }
+
+                if (notifications.length === 0) {
+                    listHTML = '<div style="padding: 15px; color: #666; text-align: center;">No new notifications</div>';
+                } else {
+                    notifications.forEach(item => {
+                        const isOutOfStock = item.type === 'out';
+                        const isRead = readNotifications.has(item.name);
+                        const backgroundColor = isRead ? '#f8f9fa' : (isOutOfStock ? '#fff5f5' : '#fff8e6');
+                        const textColor = isRead ? '#999' : (isOutOfStock ? '#dc3545' : '#ffa500');
+                        const status = isOutOfStock ? 'Out of Stock' : 'Low Stock';
+                        
+                        listHTML += `
+                            <div style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; background: ${backgroundColor};">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 500; color: #333;">${item.name}</div>
+                                        <div style="font-size: 0.85em; color: #666;">${item.category}</div>
+                                    </div>
+                                    <div style="color: ${textColor}; font-size: 0.85em; font-weight: 500;">${status}</div>
+                                </div>
+                            </div>`;
+                    });
+                }
+                
+                notificationList.innerHTML = listHTML;
+            }
+
+            // Initial update of notifications
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if notifications were marked as read
+                if (sessionStorage.getItem('notificationsRead') === 'true') {
+                    document.getElementById('notifCount').style.display = 'none';
+                    document.getElementById('notificationList').innerHTML = '<div style="padding: 15px; color: #666; text-align: center;">No new notifications</div>';
+                    document.getElementById('markAllBtn').style.display = 'none';
+                } else {
+                    updateNotifications();
+                }
+            });
+
+            // Theme Management System
+            const ThemeManager = {
+                STORAGE_KEY: 'admin-theme-preference',
+                DARK_THEME: 'dark',
+                LIGHT_THEME: 'light',
+
+                init() {
+                    this.htmlElement = document.documentElement;
+                    this.themeIcon = document.getElementById('themeIcon');
+                    this.setupSystemPreferenceListener();
+                    this.loadAndApplyTheme();
+                },
+
+                setupSystemPreferenceListener() {
+                    window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+                        if (!localStorage.getItem(this.STORAGE_KEY)) {
+                            this.setTheme(e.matches ? this.DARK_THEME : this.LIGHT_THEME, true);
+                        }
+                    });
+                },
+
+                loadAndApplyTheme() {
+                    const savedTheme = localStorage.getItem(this.STORAGE_KEY);
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const themeToApply = savedTheme || (systemPrefersDark ? this.DARK_THEME : this.LIGHT_THEME);
+                    
+                    this.setTheme(themeToApply, true);
+                },
+
+                setTheme(theme, isInitial = false) {
+                    const isDark = theme === this.DARK_THEME;
+                    
+                    // Update DOM
+                    if (isDark) {
+                        this.htmlElement.setAttribute('data-theme', 'dark');
+                        this.themeIcon.className = 'fas fa-sun';
+                        document.body.style.backgroundColor = 'var(--bg-primary)';
+                    } else {
+                        this.htmlElement.removeAttribute('data-theme');
+                        this.themeIcon.className = 'fas fa-moon';
+                        document.body.style.backgroundColor = '#ffffff';
+                    }
+
+                    // Save preference
+                    localStorage.setItem(this.STORAGE_KEY, theme);
+
+                    // Update charts if they exist
+                    if (window.revenueChart) {
+                        window.revenueChart.update();
+                    }
+
+                    // Show notification unless it's the initial load
+                    if (!isInitial) {
+                        showNotification(
+                            'Theme Updated',
+                            `Switched to ${isDark ? 'dark' : 'light'} mode`,
+                            'success'
+                        );
+                    }
+
+                    // Dispatch theme change event
+                    const event = new CustomEvent('themechange', { 
+                        detail: { theme, isInitial } 
+                    });
+                    document.dispatchEvent(event);
+
+                    // Update meta theme color for mobile browsers
+                    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                    if (metaThemeColor) {
+                        metaThemeColor.setAttribute('content', isDark ? '#1a1a1a' : '#ffffff');
+                    }
+                },
+
+                toggle() {
+                    const currentTheme = this.htmlElement.getAttribute('data-theme');
+                    this.setTheme(currentTheme === this.DARK_THEME ? this.LIGHT_THEME : this.DARK_THEME);
+                }
+            };
+
+            // Initialize theme management
+            document.addEventListener('DOMContentLoaded', () => {
+                ThemeManager.init();
+                
+                // Configure Chart.js defaults for dark mode
+                const updateChartTheme = (isDark) => {
+                    Chart.defaults.color = isDark ? 'rgba(255, 255, 255, 0.7)' : '#666666';
+                    Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb';
+                    Chart.defaults.backgroundColor = isDark ? 'rgba(255, 127, 80, 0.1)' : 'rgba(255, 183, 94, 0.1)';
+                    
+                    // Update existing charts
+                    Chart.instances.forEach(chart => {
+                        chart.options.scales.x.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb';
+                        chart.options.scales.y.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb';
+                        chart.options.scales.x.ticks.color = isDark ? 'rgba(255, 255, 255, 0.7)' : '#666666';
+                        chart.options.scales.y.ticks.color = isDark ? 'rgba(255, 255, 255, 0.7)' : '#666666';
+                        chart.update();
+                    });
+                };
+
+                // Listen for theme changes
+                document.addEventListener('themechange', (e) => {
+                    updateChartTheme(e.detail.theme === 'dark');
+                });
+
+                // Initial chart theme setup
+                updateChartTheme(document.documentElement.getAttribute('data-theme') === 'dark');
+            });
+
+            // Theme toggle function
+            function toggleDarkMode() {
+                ThemeManager.toggle();
+            }
+
+            // Initialize theme from localStorage
+            document.addEventListener('DOMContentLoaded', function() {
+                // Get saved theme or system preference
+                const savedTheme = localStorage.getItem('theme') || 
+                                 (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                const themeIcon = document.getElementById('themeIcon');
+                
+                if (savedTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    themeIcon.className = 'fas fa-sun';
+                    document.body.style.backgroundColor = 'var(--background-primary)';
+                }
+
+                // Listen for system theme changes
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                    if (!localStorage.getItem('theme')) { // Only if user hasn't manually set theme
+                        const newTheme = e.matches ? 'dark' : 'light';
+                        document.documentElement.setAttribute('data-theme', newTheme);
+                        themeIcon.className = `fas fa-${newTheme === 'dark' ? 'sun' : 'moon'}`;
+                        document.body.style.backgroundColor = newTheme === 'dark' ? 'var(--background-primary)' : '#ffffff';
+                    }
+                });
+
+                // Add smooth transitions for theme changes
+                const styleSheet = document.createElement('style');
+                styleSheet.textContent = `
+                    * {
+                        transition: background-color 0.3s ease, 
+                                  color 0.3s ease, 
+                                  border-color 0.3s ease, 
+                                  box-shadow 0.3s ease !important;
+                    }
+                `;
+                document.head.appendChild(styleSheet);
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('notificationDropdown');
+                const notificationIcon = document.querySelector('.notification-icon');
+                
+                if (!notificationIcon.contains(event.target) && !dropdown.contains(event.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        </script>
+
+        <!-- Landing Settings JavaScript -->
+        <script>
+            // Image upload preview functionality
+            function setupImagePreview(inputId, previewId) {
+                const input = document.getElementById(inputId);
+                const preview = document.getElementById(previewId);
+
+                if (input && preview) {
+                    input.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                preview.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            }
+
+            // Initialize image previews
+            document.addEventListener('DOMContentLoaded', function() {
+                setupImagePreview('logoUpload', 'logoPreview');
+                setupImagePreview('faviconUpload', 'faviconPreview');
+                setupImagePreview('heroUpload', 'heroPreview');
+            });
+
+            // Feature management
+            function addFeature() {
+                const featuresList = document.getElementById('featuresList');
+                const featureCount = featuresList.children.length;
+
+                const featureItem = document.createElement('div');
+                featureItem.className = 'feature-item';
+                featureItem.innerHTML = `
+                    <input type="text" class="settings-input" placeholder="Feature ${featureCount + 1}">
+                    <button type="button" class="remove-feature" onclick="removeFeature(this)" style="background: none; border: none; color: #FF7F50; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                featuresList.appendChild(featureItem);
+            }
+
+            function removeFeature(button) {
+                button.closest('.feature-item').remove();
+            }
+
+            // Save settings
+            function saveLandingSettings() {
+                const formData = new FormData();
+                
+                // Show loading notification
+                showNotification('Info', 'Saving settings...', 'info');
+
+                // Add file uploads
+                const logoFile = document.getElementById('logoUpload').files[0];
+                const faviconFile = document.getElementById('faviconUpload').files[0];
+                const heroFile = document.getElementById('heroUpload').files[0];
+
+                if (logoFile) formData.append('logo', logoFile);
+                if (faviconFile) formData.append('favicon', faviconFile);
+                if (heroFile) formData.append('hero_image', heroFile);
+
+                // Add text inputs
+                const settings = {
+                    branding: {
+                        restaurantName: document.getElementById('restaurantName').value,
+                        tagline: document.getElementById('tagline').value
+                    },
+                    hero: {
+                        title: document.getElementById('heroTitle').value,
+                        subtitle: document.getElementById('heroSubtitle').value
+                    },
+                    about: {
+                        story: document.getElementById('aboutUs').value,
+                        features: Array.from(document.querySelectorAll('#featuresList input')).map(input => input.value)
+                    },
+                    contact: {
+                        address: document.getElementById('address').value,
+                        phone: document.getElementById('phone').value,
+                        email: document.getElementById('email').value,
+                        hours: document.getElementById('hours').value,
+                        social: {
+                            facebook: document.getElementById('facebook').value,
+                            instagram: document.getElementById('instagram').value,
+                            tiktok: document.getElementById('tiktok').value
+                        }
+                    },
+                    theme: {
+                        primaryColor: document.getElementById('primaryColor').value,
+                        secondaryColor: document.getElementById('secondaryColor').value,
+                        fontStyle: document.getElementById('fontStyle').value,
+                        layoutStyle: document.getElementById('layoutStyle').value,
+                        newsletter: document.getElementById('newsletterToggle').checked
+                    }
+                };
+
+                formData.append('settings', JSON.stringify(settings));
+
+                // Send settings to server
+                fetch('save_landing_settings.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Success', 'Landing page settings saved successfully', 'success');
+                    } else {
+                        throw new Error(data.message || 'Failed to save settings');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error', error.message || 'Failed to save settings', 'error');
+                    console.error('Error:', error);
+                });
+                
+                // Log the data being sent for debugging
+                console.log('Settings being saved:', JSON.parse(formData.get('settings')));
+            }
+
+            // Load settings
+            function loadLandingSettings() {
+                fetch('get_landing_settings.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const settings = data.settings;
+                            
+                            // Update text inputs
+                            document.getElementById('restaurantName').value = settings.branding?.restaurantName || '';
+                            document.getElementById('tagline').value = settings.branding?.tagline || '';
+                            document.getElementById('heroTitle').value = settings.hero?.title || '';
+                            document.getElementById('heroSubtitle').value = settings.hero?.subtitle || '';
+                            document.getElementById('aboutUs').value = settings.about?.story || '';
+                            document.getElementById('address').value = settings.contact?.address || '';
+                            document.getElementById('phone').value = settings.contact?.phone || '';
+                            document.getElementById('email').value = settings.contact?.email || '';
+                            document.getElementById('hours').value = settings.contact?.hours || '';
+                            
+                            // Update social media links
+                            document.getElementById('facebook').value = settings.contact?.social?.facebook || '';
+                            document.getElementById('instagram').value = settings.contact?.social?.instagram || '';
+                            document.getElementById('tiktok').value = settings.contact?.social?.tiktok || '';
+                            
+                            // Update theme settings
+                            document.getElementById('primaryColor').value = settings.theme?.primaryColor || '#FF7F50';
+                            document.getElementById('secondaryColor').value = settings.theme?.secondaryColor || '#FFB75E';
+                            document.getElementById('fontStyle').value = settings.theme?.fontStyle || 'Poppins';
+                            document.getElementById('layoutStyle').value = settings.theme?.layoutStyle || 'centered';
+                            document.getElementById('newsletterToggle').checked = settings.theme?.newsletter || false;
+                            
+                            // Update features
+                            const featuresList = document.getElementById('featuresList');
+                            featuresList.innerHTML = '';
+                            settings.about?.features?.forEach(feature => {
+                                const featureItem = document.createElement('div');
+                                featureItem.className = 'feature-item';
+                                featureItem.innerHTML = `
+                                    <input type="text" class="settings-input" value="${feature}">
+                                    <button type="button" class="remove-feature" onclick="removeFeature(this)" style="background: none; border: none; color: #FF7F50; cursor: pointer;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                                featuresList.appendChild(featureItem);
+                            });
+                            
+                            // Update image previews if URLs are provided
+                            if (settings.branding?.logoUrl) {
+                                document.getElementById('logoPreview').src = settings.branding.logoUrl;
+                            }
+                            if (settings.branding?.faviconUrl) {
+                                document.getElementById('faviconPreview').src = settings.branding.faviconUrl;
+                            }
+                            if (settings.hero?.imageUrl) {
+                                document.getElementById('heroPreview').src = settings.hero.imageUrl;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading settings:', error);
+                        showNotification('Error', 'Failed to load settings', 'error');
+                    });
+            }
+
+            // Load settings when the landing section is shown
+            document.addEventListener('DOMContentLoaded', function() {
+                const landingSection = document.getElementById('landing-section');
+                if (landingSection) {
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                                if (!landingSection.classList.contains('hidden')) {
+                                    loadLandingSettings();
+                                }
+                            }
+                        });
+                    });
+
+                    observer.observe(landingSection, { attributes: true });
+                }
+            });
+        </script>
+    </body>
 </html>
