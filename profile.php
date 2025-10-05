@@ -85,7 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch current user data
-$stmt = $conn->prepare("SELECT id, firstName, lastName, email, username, phone, address, profile_picture, role_id FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT id, firstName, lastName, email, username, phone, address, profile_picture, role_id, 
+    COALESCE(verification_status, 'none') as verification_status,
+    id_document,
+    verification_date
+FROM users WHERE id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -109,7 +113,10 @@ if (!$user) {
         'email' => '',
         'phone' => '',
         'address' => '',
-        'profile_picture' => ''
+        'profile_picture' => '',
+        'verification_status' => 'none',
+        'id_document' => '',
+        'verification_date' => null
     ];
     $user = array_merge($defaultFields, $user);
 }
@@ -124,6 +131,31 @@ if (!$user) {
     <link rel="stylesheet" href="css/modern-style.css">
     <link rel="stylesheet" href="css/profile-style.css">
     <link rel="stylesheet" href="css/navbar-modern.css">
+    <link rel="stylesheet" href="css/verification.css">
+    <style>
+        .profile-section {
+            display: none;
+        }
+        
+        .profile-section.active {
+            display: block;
+        }
+        
+        .nav-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        
+        .profile-navigation .nav-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .profile-navigation .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -145,6 +177,10 @@ if (!$user) {
                 <a href="#security" class="nav-item" data-section="securitySection">
                     <i class="fas fa-shield-alt"></i>
                     <span>Security</span>
+                </a>
+                <a href="#verification" class="nav-item" data-section="verificationSection">
+                    <i class="fas fa-id-card"></i>
+                    <span>Verification</span>
                 </a>
                 <a href="#preferences" class="nav-item" data-section="preferencesSection">
                     <i class="fas fa-cog"></i>
@@ -186,19 +222,23 @@ if (!$user) {
         <?php endif; ?>
 
         <div class="profile-navigation">
-            <a href="#" class="nav-item active">
+            <a href="#profileSection" class="nav-item active" data-section="profileSection">
                 <i class="fas fa-user"></i>
                 Profile
             </a>
-            <a href="#" class="nav-item">
+            <a href="#securitySection" class="nav-item" data-section="securitySection">
                 <i class="fas fa-shield-alt"></i>
                 Security
             </a>
-            <a href="#" class="nav-item">
+            <a href="#verificationSection" class="nav-item" data-section="verificationSection">
+                <i class="fas fa-id-card"></i>
+                Verification
+            </a>
+            <a href="#preferencesSection" class="nav-item" data-section="preferencesSection">
                 <i class="fas fa-cog"></i>
                 Preferences
             </a>
-            <a href="#" class="nav-item">
+            <a href="#supportSection" class="nav-item" data-section="supportSection">
                 <i class="fas fa-headset"></i>
                 Support
             </a>
@@ -295,6 +335,102 @@ if (!$user) {
                 </form>
             </div>
 
+            <div class="profile-section" id="verificationSection">
+                <h2 class="section-title">
+                    <i class="fas fa-id-card"></i>
+                    Account Verification
+                </h2>
+
+                <div class="verification-status">
+                    <?php
+                    $statusClass = '';
+                    $statusText = '';
+                    
+                    switch($user['verification_status']) {
+                        case 'approved':
+                            $statusClass = 'status-approved';
+                            $statusText = 'Verified';
+                            break;
+                        case 'rejected':
+                            $statusClass = 'status-rejected';
+                            $statusText = 'Verification Rejected';
+                            break;
+                        case 'pending':
+                            $statusClass = 'status-pending';
+                            $statusText = 'Pending Approval';
+                            break;
+                        default:
+                            $statusClass = 'status-none';
+                            $statusText = 'Not Verified';
+                    }
+                    ?>
+                    <div class="status-badge <?php echo $statusClass; ?>">
+                        <i class="fas <?php echo $statusClass === 'status-approved' ? 'fa-check-circle' : 
+                                          ($statusClass === 'status-rejected' ? 'fa-times-circle' : 
+                                          'fa-clock'); ?>"></i>
+                        <?php echo $statusText; ?>
+                    </div>
+                </div>
+
+                <?php if ($user['verification_status'] === 'rejected'): ?>
+                <div class="verification-message error">
+                    <p>Your verification was rejected. Please submit a new ID document.</p>
+                </div>
+                <?php endif; ?>
+
+                <div class="verification-instructions">
+                    <h3>Verification Requirements:</h3>
+                    <ul>
+                        <li>Upload a valid government-issued ID</li>
+                        <li>Supported formats: JPG, PNG, PDF</li>
+                        <li>Maximum file size: 5MB</li>
+                        <li>ID must be clear and readable</li>
+                    </ul>
+                    <p class="note">Note: Orders will be restricted until your account is verified.</p>
+                </div>
+
+                <?php if ($user['verification_status'] === 'approved'): ?>
+                    <div class="verification-success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Your account is verified! You have full access to all features.</p>
+                        <div class="id-preview-container verified-id-container">
+                            <?php if (!empty($user['id_document'])): ?>
+                                <img src="uploaded_img/<?php echo htmlspecialchars($user['id_document']); ?>" alt="ID Document" class="id-preview">
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <form class="verification-form" method="POST" enctype="multipart/form-data" action="process_verification.php">
+                        <div class="id-upload-section">
+                            <div class="id-preview-container" id="idPreviewContainer">
+                                <?php if (!empty($user['id_document'])): ?>
+                                    <img src="uploaded_img/<?php echo htmlspecialchars($user['id_document']); ?>" alt="ID Document" class="id-preview">
+                                <?php else: ?>
+                                    <div class="upload-placeholder">
+                                        <i class="fas fa-id-card"></i>
+                                        <p>No ID document uploaded</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="upload-controls">
+                                <label for="id_document" class="upload-button">
+                                    <i class="fas fa-upload"></i>
+                                    Upload ID Document
+                                </label>
+                                <input type="file" id="id_document" name="id_document" accept=".jpg,.jpeg,.png,.pdf" hidden>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="submit-button" name="submit_verification">
+                                <i class="fas fa-paper-plane"></i>
+                                Submit for Verification
+                            </button>
+                        </div>
+                    </form>
+                <?php endif; ?>
+            </div>
+
             <div class="profile-section" id="securitySection">
                 <h2 class="section-title">
                     <i class="fas fa-lock"></i>
@@ -353,20 +489,38 @@ if (!$user) {
     </div>
 
     <script>
-        // Navigation functionality
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
-                
-                const sectionId = this.getAttribute('href').substring(1);
-                document.querySelectorAll('.profile-section').forEach(section => {
-                    section.classList.remove('active');
+        // Navigation functionality for both sidebar and profile navigation
+        function initializeNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    
+                    // Remove active class from all nav items
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // Add active class to clicked item and its corresponding items
+                    document.querySelectorAll(`[data-section="${sectionId}"]`).forEach(nav => {
+                        nav.classList.add('active');
+                    });
+                    
+                    // Hide all sections
+                    document.querySelectorAll('.profile-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // Show selected section
+                    const targetSection = document.getElementById(sectionId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
                 });
-                document.getElementById(sectionId)?.classList.add('active');
             });
-        });
+        }
+        
+        // Initialize navigation on page load
+        document.addEventListener('DOMContentLoaded', initializeNavigation);
 
         // Preview profile picture before upload
         document.getElementById('profile_picture').addEventListener('change', function(e) {
@@ -454,6 +608,53 @@ if (!$user) {
             
             setTimeout(() => alert.remove(), 5000);
         }
+
+        // ID Document preview
+        document.getElementById('id_document')?.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                
+                // Validate file size
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    showError('File is too large. Maximum size is 5MB.');
+                    e.target.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+                if (!validTypes.includes(file.type)) {
+                    showError('Invalid file type. Please upload JPG, PNG, or PDF.');
+                    e.target.value = '';
+                    return;
+                }
+
+                // If it's an image, show preview
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const container = document.getElementById('idPreviewContainer');
+                        container.innerHTML = `<img src="${e.target.result}" alt="ID Document" class="id-preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // For PDF, show an icon
+                    const container = document.getElementById('idPreviewContainer');
+                    container.innerHTML = `
+                        <div class="upload-placeholder">
+                            <i class="fas fa-file-pdf"></i>
+                            <p>${file.name}</p>
+                        </div>
+                    `;
+                }
+
+                // Enable submit button
+                const submitBtn = document.querySelector('button[name="submit_verification"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,7 +1,35 @@
 /* Global Dark Mode Overrides */
-[data-theme="dark"] body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+[data-theme="dark"] body,
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .content-section,
+[data-theme="dark"] .dashboard-section,
+[data-theme="dark"] section {
+    background-color: #1a1c23 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .container,
+[data-theme="dark"] .section-container,
+[data-theme="dark"] .content-wrapper {
+    background-color: #1a1c23 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Card and container backgrounds */
+[data-theme="dark"] .card,
+[data-theme="dark"] .stats-card,
+[data-theme="dark"] .chart-card {
+    background-color: #1e2028 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Input fields in dark mode */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: #2d303a !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Header Components */

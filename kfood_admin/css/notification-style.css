@@ -8,6 +8,37 @@
     gap: 10px;
 }
 
+[data-theme="dark"] .notification {
+    background: #1e2028;
+    box-shadow: 0 4px 12px rgb(0, 0, 0);
+}
+
+[data-theme="dark"] .notification-title {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification-message {
+    color: #e1e1e1;
+}
+
+[data-theme="dark"] .notification-close {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .notification-close:hover {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .notification-progress {
+    background: #2a2a2a;
+}
+
+[data-theme="dark"] #notificationDropdown {
+    background-color: #1e2028;
+    border: 1px solid #2a2a33;
+    box-shadow: 0 8px 16px rgb(0, 0, 0);
+}
+
 .notification {
     background: white;
     border-radius: 8px;

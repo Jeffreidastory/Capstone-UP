@@ -1,0 +1,90 @@
+/* Dark mode overrides for inventory */
+[data-theme="dark"] .inventory-section {
+    background-color: #1a1a1a;
+}
+
+[data-theme="dark"] .table-header,
+[data-theme="dark"] .dark-mode-header,
+[data-theme="dark"] div[style*="background"],
+[data-theme="dark"] .table-responsive,
+[data-theme="dark"] .inventory-filters {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .inventory-header {
+    background-color: transparent !important;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .inventory-title,
+[data-theme="dark"] h3.inventory-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff !important;
+    margin: 0;
+    white-space: nowrap;
+    text-shadow: none;
+}
+
+[data-theme="dark"] .inventory-table-container {
+    background: #1e2028 !important;
+    background-color: #1e2028 !important;
+    border: 1px solid #2d2d2d;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+[data-theme="dark"] .inventory-table th {
+    background-color: #1e2028 !important;
+    color: #ffffff;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+[data-theme="dark"] .inventory-table td {
+    background-color: #1e2028 !important;
+    border-bottom: 1px solid #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .inventory-table tr:hover td {
+    background-color: #282b36 !important;
+}
+
+[data-theme="dark"] .inventory-kpi-cards .kpi-card {
+    background-color: #1a1a1a;
+    border: 1px solid #2d2d2d;
+}
+
+[data-theme="dark"] .kpi-info h3 {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .kpi-info p {
+    color: #b0b0b0;
+}
+
+/* Dark mode search styles */
+[data-theme="dark"] .dark-mode-search,
+[data-theme="dark"] #inventorySearch,
+[data-theme="dark"] .search-box input,
+[data-theme="dark"] input[type="text"] {
+    background: #1a1a1a !important;
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #3d3d3d !important;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .search-box {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .dark-mode-search::placeholder,
+[data-theme="dark"] #inventorySearch::placeholder,
+[data-theme="dark"] .search-box input::placeholder {
+    color: #808080;
+}

@@ -49,7 +49,7 @@ document.getElementById('createUserForm').onsubmit = function(e) {
 
     if (password !== confirmPassword) {
         e.preventDefault();
-        showNotification('Error', 'Passwords do not match', 'error');
+        notifications.showError('Error', 'Passwords do not match');
         return false;
     }
 
@@ -92,14 +92,14 @@ function filterTable(searchTerm, roleFilter) {
 function deleteUser(userId) {
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
         // Add AJAX call here to delete user
-        showNotification('Success', 'User deleted successfully', 'success');
+        notifications.showSuccess('Success', 'User deleted successfully');
     }
 }
 
 // Edit user function
 function editUser(userId) {
     // Add edit user functionality here
-    showNotification('Info', 'Edit functionality coming soon', 'info');
+    notifications.showSuccess('Info', 'Edit functionality coming soon');
 }
 
 // Highlight new users

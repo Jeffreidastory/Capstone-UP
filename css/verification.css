@@ -1,0 +1,207 @@
+.verification-status {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.status-badge {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #FF7F50, #FF6347);
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 127, 80, 0.2);
+}
+
+.status-badge i {
+    font-size: 1.2rem;
+}
+
+.verification-instructions {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 165, 0, 0.2);
+}
+
+.verification-instructions h3 {
+    color: #FFA500;
+    margin-bottom: 1rem;
+}
+
+.verification-instructions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.verification-instructions li {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    color: #666;
+}
+
+.verification-instructions li:before {
+    content: '•';
+    color: #FFD700;
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.verification-instructions .note {
+    margin-top: 1rem;
+    color: #FFA500;
+    font-style: italic;
+}
+
+.id-upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.id-preview-container {
+    width: 100%;
+    max-width: 400px;
+    height: 250px;
+    border: 2px dashed rgba(255, 165, 0, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 165, 0, 0.05));
+    transition: all 0.3s ease;
+}
+
+.id-preview-container:hover {
+    border-color: #FFA500;
+}
+
+.id-preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.upload-placeholder {
+    text-align: center;
+    color: #FFA500;
+}
+
+.upload-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.upload-controls {
+    text-align: center;
+}
+
+.upload-button {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.upload-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.submit-button {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+}
+
+.verification-message {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.verification-success-message {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 127, 80, 0.1);
+    border-radius: 12px;
+    margin: 2rem 0;
+}
+
+.verification-success-message i {
+    font-size: 3rem;
+    color: #4CAF50;
+    margin-bottom: 1rem;
+}
+
+.verification-success-message p {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.verified-id-container {
+    margin: 0 auto;
+    max-width: 400px;
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.verification-message.error {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4444;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+/* Status-specific colors */
+.status-pending {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+}
+
+.status-approved {
+    background: linear-gradient(135deg, #90EE90, #32CD32);
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, #FFB6C1, #DC143C);
+}
+
+.status-none {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+}

@@ -1,0 +1,64 @@
+/* Enhanced Status Badges */
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge.in-stock {
+    background: linear-gradient(135deg, #def7ec 0%, #d1fae5 100%);
+    color: #065f46;
+    border: 1px solid #34d399;
+}
+
+.status-badge.low-stock {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+.status-badge.out-of-stock {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #f87171;
+}
+
+/* Dark Theme Styles */
+[data-theme="dark"] .status-badge.in-stock {
+    background: linear-gradient(135deg, rgba(6, 95, 70, 0.2) 0%, rgba(52, 211, 153, 0.2) 100%);
+    color: #34d399;
+    border: 1px solid #059669;
+}
+
+[data-theme="dark"] .status-badge.low-stock {
+    background: linear-gradient(135deg, rgba(146, 64, 14, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+    color: #fbbf24;
+    border: 1px solid #d97706;
+}
+
+[data-theme="dark"] .status-badge.out-of-stock {
+    background: linear-gradient(135deg, rgba(153, 27, 27, 0.2) 0%, rgba(248, 113, 113, 0.2) 100%);
+    color: #f87171;
+    border: 1px solid #dc2626;
+}
+
+/* Badge Icons */
+.status-badge.in-stock::before {
+    content: "✓";
+    font-weight: bold;
+}
+
+.status-badge.low-stock::before {
+    content: "!";
+    font-weight: bold;
+}
+
+.status-badge.out-of-stock::before {
+    content: "×";
+    font-weight: bold;
+}

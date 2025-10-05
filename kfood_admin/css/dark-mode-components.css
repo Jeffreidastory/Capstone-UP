@@ -216,8 +216,48 @@
 
 /* Notifications */
 [data-theme="dark"] .notification {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
+    background-color: #1e2028;
+    border-color: #2a2a33;
+}
+
+[data-theme="dark"] #notificationDropdown {
+    background-color: #1e2028 !important;
+    border: 1px solid #2a2a33 !important;
+    box-shadow: 0 8px 16px rgb(0 0 0) !important;
+}
+
+[data-theme="dark"] #notificationList > div {
+    background-color: #1e2028 !important;
+    border-bottom: 1px solid #2a2a33 !important;
+    color: #e1e1e1 !important;
+}
+
+[data-theme="dark"] #notificationList .no-notifications {
+    color: #e1e1e1;
+    background-color: #1e2028 !important;
+}
+
+[data-theme="dark"] #notificationList div[style*="background"] {
+    background-color: #1e2028 !important;
+}
+
+[data-theme="dark"] #notificationList div[style*="color"] {
+    color: #e1e1e1 !important;
+}
+
+[data-theme="dark"] #markAllBtn {
+    background-color: #2a2a33 !important;
+    color: #ff7f50 !important;
+    border: 1px solid #3a3a43 !important;
+}
+
+[data-theme="dark"] .notification-header {
+    color: #e1e1e1 !important;
+}
+
+[data-theme="dark"] #notificationDropdown div[class*="notification-"] {
+    background-color: #1e2028 !important;
+    color: #e1e1e1 !important;
 }
 
 /* Menu Creation Section */

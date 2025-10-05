@@ -1,0 +1,80 @@
+/* Dark mode notification styles */
+[data-theme="dark"] #notificationDropdown {
+    background: #1e2028;
+    border: 1px solid #2a2a33;
+    box-shadow: 0 8px 16px rgb(0 0 0);
+}
+
+[data-theme="dark"] .notification-header {
+    color: #e1e1e1;
+}
+
+[data-theme="dark"] #markAllBtn {
+    background: #2a2a33;
+    color: #ff7f50;
+    border: 1px solid #3a3a43;
+}
+
+[data-theme="dark"] #markAllBtn:hover {
+    background: #3a3a43;
+}
+
+[data-theme="dark"] #notificationList > div {
+    background: #1e2028 !important;
+    border-bottom: 1px solid #2a2a33;
+}
+
+[data-theme="dark"] #notificationList .notification-item {
+    background: #1e2028;
+    border-bottom: 1px solid #2a2a33;
+}
+
+[data-theme="dark"] #notificationList .notification-item div {
+    color: #e1e1e1;
+}
+
+[data-theme="dark"] #notificationList .notification-item div[style*="font-size: 0.85em"] {
+    color: #b0b0b0 !important;
+}
+
+/* Status colors in dark mode */
+[data-theme="dark"] #notificationList .notification-item div[style*="font-weight: 500"] {
+    color: #ff6b6b !important; /* Out of stock */
+}
+
+[data-theme="dark"] #notificationList .notification-item div[style*="Critical"] {
+    color: #ffb84d !important; /* Critical stock */
+}
+
+/* Empty state message */
+[data-theme="dark"] #notificationList > div[style*="text-align: center"] {
+    background: #1e2028 !important;
+    color: #e1e1e1 !important;
+}
+
+/* Toast notifications in dark mode */
+[data-theme="dark"] .notification {
+    background: #1e2028;
+    box-shadow: 0 8px 16px rgb(0 0 0);
+    border: 1px solid #2a2a33;
+}
+
+[data-theme="dark"] .notification-title {
+    color: #e1e1e1;
+}
+
+[data-theme="dark"] .notification-message {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .notification-close {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .notification-close:hover {
+    color: #e1e1e1;
+}
+
+[data-theme="dark"] .notification-progress {
+    background: #2a2a33;
+}

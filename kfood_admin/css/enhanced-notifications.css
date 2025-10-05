@@ -1,0 +1,128 @@
+#notificationContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: none; /* Allow clicking through the container */
+}
+
+.notification {
+    display: flex;
+    align-items: flex-start;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin-bottom: 10px;
+    padding: 16px;
+    width: 300px;
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto; /* Re-enable pointer events for notifications */
+    border-left: 4px solid transparent;
+}
+
+[data-theme="dark"] .notification {
+    background: #2a2d3a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification.success {
+    border-left-color: #4CAF50;
+    background: linear-gradient(to right, rgba(76, 175, 80, 0.1), transparent);
+}
+
+.notification.error {
+    border-left-color: #f44336;
+    background: linear-gradient(to right, rgba(244, 67, 54, 0.1), transparent);
+}
+
+.notification-icon {
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.notification.success .notification-icon {
+    color: #4CAF50;
+}
+
+.notification.error .notification-icon {
+    color: #f44336;
+}
+
+.notification-content {
+    flex-grow: 1;
+    margin-right: 24px;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.notification-message {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+[data-theme="dark"] .notification-title {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] .notification-message {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    transition: color 0.2s ease;
+}
+
+.notification-close:hover {
+    color: #666;
+}
+
+.notification-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .notification-progress {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-progress::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: currentColor;
+    animation: notification-progress 5s linear forwards;
+}
+
+.notification.success .notification-progress::after {
+    background: #4CAF50;
+}
+
+.notification.error .notification-progress::after {
+    background: #f44336;
+}
+
+@keyframes notification-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}

@@ -2,6 +2,13 @@ class Cart {
     constructor() {
         this.items = [];
         this.loadFromSession();
+        
+        // Initialize selected items with all cart items by default
+        if (!sessionStorage.getItem('selectedItems')) {
+            const selectedItems = this.items.map(item => item.id);
+            sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+        }
+        
         this.setupEventListeners();
     }
 
@@ -99,7 +106,15 @@ class Cart {
     }
 
     calculateSubtotal() {
-        return this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+        const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+        return this.items.reduce((total, item) => {
+            return total + (selectedItems.includes(item.id) ? item.price * item.quantity : 0);
+        }, 0);
+    }
+
+    getSelectedItems() {
+        const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+        return this.items.filter(item => selectedItems.includes(item.id));
     }
 
     calculateTotal() {
@@ -127,34 +142,74 @@ class Cart {
 
         if (this.items.length === 0) {
             cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+            if (subtotalElement) subtotalElement.innerHTML = '0.00';
+            if (totalElement) totalElement.textContent = '0.00';
             if (checkoutBtn) checkoutBtn.disabled = true;
-        } else {
-            cartItems.innerHTML = this.items.map(item => `
-                <div class="cart-item" data-id="${item.id}">
-                    <img src="uploaded_img/${item.image}" alt="${item.name}" class="cart-item-image">
-                    <div class="cart-item-details">
-                        <h3>${item.name}</h3>
-                        <div class="cart-item-price">₱${(item.price * item.quantity).toFixed(2)}</div>
-                        <div class="cart-item-controls">
-                            <button class="quantity-btn minus" data-id="${item.id}">-</button>
-                            <span class="quantity">${item.quantity}</span>
-                            <button class="quantity-btn plus" data-id="${item.id}">+</button>
-                            <button class="remove-btn" data-id="${item.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
+            return;
+        }
+
+        // Get selected items
+        const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+
+        // Update cart items display
+        cartItems.innerHTML = this.items.map(item => `
+            <div class="cart-item" data-id="${item.id}">
+                <input type="checkbox" class="cart-item-checkbox" data-id="${item.id}" ${selectedItems.includes(item.id) ? 'checked' : ''}>
+                <img src="uploaded_img/${item.image}" alt="${item.name}" class="cart-item-image">
+                <div class="cart-item-details">
+                    <h3>${item.name}</h3>
+                    <div class="cart-item-price">₱${(item.price * item.quantity).toFixed(2)}</div>
+                    <div class="cart-item-controls">
+                        <button class="quantity-btn minus" data-id="${item.id}">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="quantity-btn plus" data-id="${item.id}">+</button>
+                        <button class="remove-btn" data-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+            // Calculate and display subtotal
+        if (subtotalElement) {
+            let total = 0;
+            let breakdownHTML = '';
+
+            // Add selected items to breakdown
+            this.items.forEach(item => {
+                if (selectedItems.includes(item.id)) {
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    breakdownHTML += `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>${item.name} (${item.quantity})</span>
+                            <span>₱${itemTotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            breakdownHTML = `
+                <div class="subtotal-section">
+                    ${breakdownHTML}
+                    <div style="border-top: 1px solid #dee2e6; margin-top: 10px; padding-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                            <span>Total:</span>
+                            <span>₱${total.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
 
-            if (checkoutBtn) checkoutBtn.disabled = false;
-        }
-
-        if (subtotalElement) {
-            subtotalElement.textContent = this.calculateSubtotal().toFixed(2);
-        }
-        if (totalElement) {
-            totalElement.textContent = this.calculateTotal().toFixed(2);
+            subtotalElement.innerHTML = breakdownHTML;
+            if (totalElement) {
+                totalElement.innerHTML = `₱${total.toFixed(2)}`;
+            }
+        }        // Update checkout button state
+        if (checkoutBtn) {
+            const hasSelectedItems = selectedItems.length > 0;
+            checkoutBtn.disabled = !hasSelectedItems;
         }
     }
 
@@ -244,6 +299,26 @@ class Cart {
                 this.updateCartDisplay();
             });
 
+            // Add event listener for checkbox changes
+            document.addEventListener('change', (e) => {
+                if (e.target.classList.contains('cart-item-checkbox')) {
+                    const itemId = e.target.dataset.id;
+                    const isChecked = e.target.checked;
+                    
+                    // Update selected items in session storage
+                    let selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+                    
+                    if (isChecked && !selectedItems.includes(itemId)) {
+                        selectedItems.push(itemId);
+                    } else if (!isChecked) {
+                        selectedItems = selectedItems.filter(id => id !== itemId);
+                    }
+                    
+                    sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+                    this.updateCartDisplay(); // Update totals when checkbox state changes
+                }
+            });
+
             closeCartBtn.addEventListener('click', () => {
                 cartModal.style.display = 'none';
             });
@@ -276,11 +351,31 @@ class Cart {
                         }
                         return;
                     }
-                    // Stay on current page and close cart
+
+                    const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+                    if (selectedItems.length === 0) {
+                        this.showNotification('Please select at least one item to checkout', 'error');
+                        return;
+                    }
+
+                    // Get the selected items from cart
+                    const selectedCartItems = this.items.filter(item => selectedItems.includes(item.id));
+                    if (selectedCartItems.length === 0) {
+                        this.showNotification('Please select at least one item to checkout', 'error');
+                        return;
+                    }
+
+                    // Save only the selected items for checkout
+                    sessionStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
+
+                    // Clear the cart modal
                     const cartModal = document.getElementById('cartModal');
                     if (cartModal) {
                         cartModal.style.display = 'none';
                     }
+
+                    // Redirect to checkout page
+                    window.location.href = 'checkout.php';
                 } catch (error) {
                     console.error('Error checking profile:', error);
                     this.showNotification('An error occurred. Please try again.', 'error');

@@ -20,11 +20,17 @@ if (!$data || empty($data['items'])) {
 
 // Get user information
 $userId = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT FirstName, LastName, phone, address FROM users WHERE Id = ?");
+$stmt = $conn->prepare("SELECT FirstName, LastName, phone, address, verification_status FROM users WHERE Id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+
+// Check if user is verified
+if ($user['verification_status'] !== 'approved') {
+    echo json_encode(['success' => false, 'message' => 'Your account must be verified before placing orders. Please complete verification in your profile.']);
+    exit();
+}
 
 if (!$user) {
     echo json_encode(['success' => false, 'message' => 'User information not found']);

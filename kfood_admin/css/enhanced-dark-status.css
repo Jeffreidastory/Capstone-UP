@@ -1,0 +1,77 @@
+/* Enhanced Dark Mode Status Badge Styles */
+[data-theme="dark"] .status-badge {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .status-badge.in-stock {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 95, 70, 0.25) 100%);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .status-badge.low-stock {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(146, 64, 14, 0.25) 100%);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .status-badge.out-of-stock {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(153, 27, 27, 0.25) 100%);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced Status Badge Icons */
+[data-theme="dark"] .status-badge::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 0.9em;
+}
+
+[data-theme="dark"] .status-badge.in-stock::before {
+    content: "✓";
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+
+[data-theme="dark"] .status-badge.low-stock::before {
+    content: "!";
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+[data-theme="dark"] .status-badge.out-of-stock::before {
+    content: "×";
+    text-shadow: 0 0 10px rgba(248, 113, 113, 0.5);
+}
+
+/* Hover Effects */
+[data-theme="dark"] .status-badge:hover {
+    transform: translateY(-1px);
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .status-badge.in-stock:hover {
+    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .status-badge.low-stock:hover {
+    box-shadow: 0 6px 12px rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .status-badge.out-of-stock:hover {
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3);
+}

@@ -1,0 +1,115 @@
+.verification-item {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.verification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .verification-item {
+    background-color: #2a2d3a;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.verification-item img.profile-pic {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.verification-item .id-document {
+    max-width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.verification-item .id-document:hover {
+    transform: scale(1.02);
+}
+
+.verification-item textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+
+[data-theme="dark"] .verification-item textarea {
+    background-color: #32364a;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.verification-item textarea:focus {
+    outline: none;
+    border-color: #FF7F50;
+    box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.1);
+}
+
+.verification-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.verification-btn i {
+    font-size: 14px;
+}
+
+.verification-btn.approve {
+    background: #4CAF50;
+    color: white;
+}
+
+.verification-btn.reject {
+    background: #f44336;
+    color: white;
+}
+
+.verification-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+}
+
+.verification-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+[data-theme="dark"] .verification-btn {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation classes */
+.verification-item.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.verification-item.slide-up {
+    height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+}

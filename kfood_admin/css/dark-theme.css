@@ -1,0 +1,120 @@
+/* Dark Theme Styles */
+body[data-theme="dark"] {
+    background-color: #111827;
+    color: #e5e7eb;
+}
+
+/* Table Styles */
+body[data-theme="dark"] .inventory-table {
+    background-color: #1f2937;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+body[data-theme="dark"] .inventory-table th {
+    background-color: #374151;
+    color: #e5e7eb;
+    border-bottom: 2px solid #4b5563;
+    padding: 16px;
+}
+
+body[data-theme="dark"] .inventory-table td {
+    border-bottom: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 16px;
+}
+
+body[data-theme="dark"] .inventory-table tr:hover {
+    background-color: #374151;
+}
+
+/* Search and Filter Styles */
+body[data-theme="dark"] .search-box input,
+body[data-theme="dark"] select {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    color: #e5e7eb;
+}
+
+body[data-theme="dark"] .search-box input::placeholder {
+    color: #9ca3af;
+}
+
+/* Status Badge Enhanced Dark Theme */
+body[data-theme="dark"] .status-badge {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body[data-theme="dark"] .status-badge.in-stock {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 95, 70, 0.2) 100%);
+    color: #34d399;
+    border: 1px solid #059669;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body[data-theme="dark"] .status-badge.low-stock {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(146, 64, 14, 0.2) 100%);
+    color: #fbbf24;
+    border: 1px solid #d97706;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body[data-theme="dark"] .status-badge.out-of-stock {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(153, 27, 27, 0.2) 100%);
+    color: #f87171;
+    border: 1px solid #dc2626;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Product Image */
+body[data-theme="dark"] .product-img {
+    border: 2px solid #374151;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Action Buttons */
+body[data-theme="dark"] .action-btn {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    color: #e5e7eb;
+}
+
+body[data-theme="dark"] .action-btn:hover {
+    background-color: #4b5563;
+}
+
+/* Section Headers */
+body[data-theme="dark"] .section-header {
+    color: #e5e7eb;
+    border-bottom: 2px solid #374151;
+}
+
+/* Filter Buttons */
+body[data-theme="dark"] .filter-btn {
+    background-color: #374151;
+    color: #e5e7eb;
+    border: 1px solid #4b5563;
+}
+
+body[data-theme="dark"] .filter-btn:hover {
+    background-color: #4b5563;
+}
+
+/* Scrollbar Styling */
+body[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}

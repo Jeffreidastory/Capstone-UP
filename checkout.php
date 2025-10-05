@@ -10,11 +10,14 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get user information
 $userId = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT FirstName, LastName, Email, phone, address FROM users WHERE Id = ?");
+$stmt = $conn->prepare("SELECT FirstName, LastName, Email, phone, address, verification_status FROM users WHERE Id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+
+// Check if user is verified
+$isVerified = $user['verification_status'] === 'approved';
 
 // Check if required information is complete
 $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
@@ -28,6 +31,7 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
     <link rel="stylesheet" href="css/modern-style.css">
     <link rel="stylesheet" href="css/navbar-modern.css">
     <link rel="stylesheet" href="css/cart.css">
+    <link rel="stylesheet" href="css/cart-breakdown.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
@@ -56,10 +60,116 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
         }
     </script>
     <style>
+        .verification-required {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+            border: 1px solid #ffeeba;
+        }
+
+        .verification-required a {
+            color: #ff6b6b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .verification-required a:hover {
+            text-decoration: underline;
+        }
+
+        .notifications-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            padding: 0 20px;
+        }
+
+        .alert-box {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            gap: 15px;
+        }
+
+        .alert-text {
+            flex: 1;
+        }
+
+        .alert-text strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .alert-text p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .alert-box.warning {
+            border-left: 4px solid #ff9800;
+            background-color: #fff8e1;
+        }
+
+        .alert-box.info {
+            border-left: 4px solid #2196F3;
+            background-color: #e3f2fd;
+        }
+
+        .alert-box i {
+            font-size: 1.5rem;
+        }
+
+        .alert-box.warning i {
+            color: #ff9800;
+        }
+
+        .alert-box.info i {
+            color: #2196F3;
+        }
+
+        .alert-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .alert-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .alert-btn.info-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .alert-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Original notification style kept for other notifications */
         .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
             background: white;
             padding: 15px 20px;
             border-radius: 8px;
@@ -96,6 +206,30 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
             color: #f44336;
         }
 
+        .notification.warning {
+            border-left-color: #ff9800;
+            background-color: #fff8e1;
+        }
+
+        .notification.warning i {
+            color: #ff9800;
+        }
+
+        .verify-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #ff9800;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .verify-link:hover {
+            background-color: #f57c00;
+        }
+
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -103,7 +237,7 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
 
         .checkout-container {
             max-width: 1200px;
-            margin: 40px auto;
+            margin: 20px auto;
             padding: 20px;
             font-family: 'Poppins', sans-serif;
             display: grid;
@@ -392,16 +526,33 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
         <h1 class="page-title">Checkout</h1>
     </div>
 
-    <?php if (!$isProfileComplete): ?>
-    <div class="notification">
-        <i class="fas fa-exclamation-circle"></i>
-        <div class="notification-content">
-            <p><strong>Profile Incomplete!</strong></p>
-            <p>Please complete your profile information before proceeding to checkout.</p>
-            <a href="profile.php">Go to Profile Settings</a>
+    <div class="notifications-container">
+        <?php if (!$isVerified): ?>
+        <div class="alert-box warning">
+            <div class="alert-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="alert-text">
+                    <strong>Account Verification Required</strong>
+                    <p>Please verify your account to place orders. This helps us ensure a secure ordering process.</p>
+                </div>
+                <a href="profile.php#verification" class="alert-btn">Go to Verification</a>
+            </div>
         </div>
+        <?php endif; ?>
+
+        <?php if (!$isProfileComplete): ?>
+        <div class="alert-box info">
+            <div class="alert-content">
+                <i class="fas fa-exclamation-circle"></i>
+                <div class="alert-text">
+                    <strong>Profile Incomplete</strong>
+                    <p>Please update your phone number and delivery address to proceed with checkout.</p>
+                </div>
+                <a href="profile.php" class="alert-btn info-btn">Complete Profile</a>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
 
     <div class="checkout-container">
         <!-- Billing Information -->
@@ -487,7 +638,9 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
             </div>
         </div>
 
-        <button id="placeOrderBtn" class="place-order-btn" <?php echo !$isProfileComplete ? 'disabled' : ''; ?>>
+        <button id="placeOrderBtn" class="place-order-btn" <?php echo (!$isProfileComplete || !$isVerified) ? 'disabled' : ''; ?> 
+                data-verified="<?php echo $isVerified ? 'true' : 'false'; ?>"
+                data-profile-complete="<?php echo $isProfileComplete ? 'true' : 'false'; ?>">
             Place Order
         </button>
     </div>
@@ -501,33 +654,42 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
             });
         });
 
-        // Load cart data from sessionStorage
+        // Load selected cart items from sessionStorage
         function loadCartData() {
-            const cartData = JSON.parse(sessionStorage.getItem('cart') || '[]');
+            const checkoutItems = JSON.parse(sessionStorage.getItem('checkoutItems') || '[]');
             const orderItems = document.getElementById('orderItems');
+            
+            if (!orderItems || checkoutItems.length === 0) {
+                window.location.href = 'index.php';
+                return;
+            }
             
             if (!orderItems) return;
 
-            let html = '';
+            let html = '<div class="cart-breakdown">';
             let total = 0;
 
-            cartData.forEach(item => {
+            checkoutItems.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
                 html += `
-                    <div class="summary-item" data-id="${item.id}">
-                        <span>${item.name} × ${item.quantity}</span>
-                        <span>₱${itemTotal.toFixed(2)}</span>
+                    <div class="breakdown-item">
+                        <div class="item-detail">
+                            <span class="item-name">${item.name} (${item.quantity})</span>
+                            <span class="item-dots"></span>
+                            <span class="item-price">₱${itemTotal.toFixed(2)}</span>
+                        </div>
                     </div>
                 `;
             });
 
             html += `
-                <div class="summary-item summary-total">
-                    <span>Total</span>
-                    <span>₱${total.toFixed(2)}</span>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-total">
+                    <span class="total-label">Total:</span>
+                    <span class="total-amount">₱${total.toFixed(2)}</span>
                 </div>
-            `;
+            </div>`;
 
             orderItems.innerHTML = html;
         }
@@ -536,6 +698,17 @@ $isProfileComplete = !empty($user['phone']) && !empty($user['address']);
         const placeOrderBtn = document.getElementById('placeOrderBtn');
         if (placeOrderBtn) {
             placeOrderBtn.addEventListener('click', async () => {
+                // Check verification status
+                if (placeOrderBtn.dataset.verified !== 'true') {
+                    showNotification('Verification Required', 'Please verify your account before placing an order.', 'warning');
+                    return;
+                }
+                
+                // Check profile completion
+                if (placeOrderBtn.dataset.profileComplete !== 'true') {
+                    showNotification('Profile Incomplete', 'Please complete your profile before placing an order.', 'warning');
+                    return;
+                }
                 const selectedPayment = document.querySelector('.payment-method.selected');
                 if (!selectedPayment) {
                     showNotification('Warning', 'Please select a payment method', 'error');

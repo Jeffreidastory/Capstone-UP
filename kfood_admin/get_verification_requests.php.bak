@@ -1,0 +1,149 @@
+<?php
+session_start();
+
+header('Content-Type: application/json');
+include "../connect.php";
+
+// Helper function to get role name
+function getRoleName($role_id) {
+
+    echo json_encode(['error' => 'Unauthorized access']);    switch ($role_id) {
+
+    exit;        case 1:
+
+}            return 'Super Admin';
+
+        case 2:
+
+$status_filter = isset($_GET['status']) ? $_GET['status'] : 'all';            return 'Administrator';
+
+        case 3:
+
+$query = "SELECT             return 'Crew Member';
+
+            v.*,         case 4:
+
+            u.FirstName,            return 'Customer';
+
+            u.LastName,        default:
+
+            u.Email            return 'Unknown';
+
+          FROM verification_history v    }
+
+          LEFT JOIN users u ON v.user_id = u.Id";}
+
+
+
+if ($status_filter !== 'all') {// Check if user is logged in and has admin privileges
+
+    $query .= " WHERE v.status = '" . mysqli_real_escape_string($conn, $status_filter) . "'";if (!isset($_SESSION['role_id']) || ($_SESSION['role_id'] != 1 && $_SESSION['role_id'] != 2)) {
+
+}    echo json_encode(['error' => 'Unauthorized']);
+
+$query .= " ORDER BY v.created_at DESC";    exit();
+
+}
+
+$result = mysqli_query($conn, $query);
+
+if (!$result) {$status = isset($_GET['status']) ? $_GET['status'] : 'all';
+
+    echo json_encode(['error' => 'Database error: ' . mysqli_error($conn)]);
+
+    exit;$query = "SELECT u.Id as user_id, u.FirstName as first_name, u.LastName as last_name, 
+
+}                 u.username, u.Email as email, u.phone, u.address,
+
+                 COALESCE(u.verification_status, 'pending') as verification_status, 
+
+$requests = [];                 u.profile_picture, u.role_id,
+
+while ($row = mysqli_fetch_assoc($result)) {                 u.verification_date, u.verification_notes, u.id_document 
+
+    $requests[] = [          FROM users u 
+
+        'id' => $row['id'],          WHERE (COALESCE(u.verification_status, 'pending') = 'pending' OR 
+
+        'user_id' => $row['user_id'],                (? = 'all'))";
+
+        'user_name' => $row['user_name'],
+
+        'firstName' => $row['FirstName'],$params = array();
+
+        'lastName' => $row['LastName'],$types = "";
+
+        'email' => $row['Email'],
+
+        'id_document' => $row['id_document'],if ($status !== 'all') {
+
+        'status' => $row['status'],    $query .= " AND u.verification_status = ?";
+
+        'created_at' => $row['created_at'],    $params[] = $status;
+
+        'admin_name' => $row['admin_name']    $types .= "s";
+
+    ];} else {
+
+}    $params[] = $status;
+
+    $types .= "s";
+
+echo json_encode($requests);}
+
+?>
+$query .= " ORDER BY FIELD(verification_status, 'pending', 'rejected', 'approved'), verification_date DESC";
+
+$stmt = $conn->prepare($query);
+if (!empty($types)) {
+    try {
+        $stmt->bind_param($types, ...$params);
+    } catch (Exception $e) {
+        error_log('Parameter binding failed: ' . $e->getMessage());
+        echo json_encode(['error' => 'Parameter binding failed: ' . $e->getMessage()]);
+        exit();
+    }
+}
+
+if (!$stmt->execute()) {
+    error_log('Query execution failed: ' . $stmt->error);
+    echo json_encode(['error' => 'Failed to execute query: ' . $stmt->error]);
+    exit();
+}
+
+$result = $stmt->get_result();
+if ($result === false) {
+    error_log('Failed to get result: ' . $conn->error);
+    echo json_encode(['error' => 'Failed to get result: ' . $conn->error]);
+    exit();
+}
+
+$requests = [];
+
+if ($result === false) {
+    echo json_encode(['error' => 'Database error: ' . $conn->error]);
+    exit();
+}
+
+while ($row = $result->fetch_assoc()) {
+    // Sanitize the data
+    $request = array(
+        'user_id' => (int)$row['user_id'],
+        'first_name' => htmlspecialchars($row['first_name']),
+        'last_name' => htmlspecialchars($row['last_name']),
+        'username' => htmlspecialchars($row['username']),
+        'email' => htmlspecialchars($row['email']),
+        'phone' => htmlspecialchars($row['phone'] ?? 'N/A'),
+        'address' => htmlspecialchars($row['address'] ?? 'N/A'),
+        'verification_status' => htmlspecialchars($row['verification_status']),
+        'verification_date' => $row['verification_date'] ? date('F j, Y g:i A', strtotime($row['verification_date'])) : null,
+        'verification_notes' => htmlspecialchars($row['verification_notes'] ?? ''),
+        'id_document' => htmlspecialchars($row['id_document']),
+        'profile_picture' => htmlspecialchars($row['profile_picture'] ?? ''),
+        'role_id' => (int)$row['role_id'],
+        'role_name' => getRoleName((int)$row['role_id'])
+    );
+    $requests[] = $request;
+}
+
+echo json_encode($requests);

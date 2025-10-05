@@ -228,6 +228,13 @@
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.users-table td:last-child {
+    text-align: right;
+    white-space: nowrap;
+    width: 120px;
 }
 
 .users-table th {
@@ -270,6 +277,8 @@
 .actions {
     display: flex;
     gap: 0.5rem;
+    justify-content: flex-end;
+    min-width: 90px;
 }
 
 .action-btn {

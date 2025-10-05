@@ -4,6 +4,15 @@ require_once "../connect.php";
 
 header('Content-Type: application/json');
 
+function logDebug($message, $data = null) {
+    $logMessage = '[' . date('Y-m-d H:i:s') . '] ' . $message;
+    if ($data !== null) {
+        $logMessage .= '\nData: ' . print_r($data, true);
+    }
+    $logMessage .= "\n----------------------------------------\n";
+    file_put_contents(__DIR__ . '/debug_log.txt', $logMessage, FILE_APPEND);
+}
+
 // Ensure the user is logged in and is a crew member
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
@@ -51,11 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle stock deduction first if marking as out for delivery
         if ($new_status === 'out for delivery') {
+            logDebug("Starting stock deduction for Order #$order_id", [
+                'items' => $order['item_name'],
+                'total_products' => $order['total_products']
+            ]);
             // Split the item_name string by newlines to get individual items
             $items = array_filter(explode("\n", $order['item_name']));
             
             foreach ($items as $item_entry) {
                 // Extract item name and quantity using regex
+                logDebug("Processing item: $item_entry");
                 if (preg_match('/^(.+?)\s*\((\d+)\)$/', trim($item_entry), $matches)) {
                     $item_name = trim($matches[1]);
                     $quantity = intval($matches[2]);
@@ -84,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     // Update stock
+                    logDebug("Updating stock for $item_name", [
+                        'product_id' => $product['id'],
+                        'current_stock' => $current_stock,
+                        'quantity_to_deduct' => $quantity,
+                        'new_stock' => $new_stock
+                    ]);
                     $update_stock = $conn->prepare("UPDATE products SET stock = ? WHERE id = ?");
                     $update_stock->bind_param("ii", $new_stock, $product['id']);
                     
@@ -92,6 +112,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     // Log stock change
+                    logDebug("Recording stock history", [
+                        'type' => 'stock_out',
+                        'product_id' => $product['id'],
+                        'quantity' => $quantity,
+                        'previous_stock' => $current_stock,
+                        'new_stock' => $new_stock
+                    ]);
                     $type = 'stock_out';
                     $stock_history = $conn->prepare("INSERT INTO stock_history (product_id, type, quantity, previous_stock, new_stock) VALUES (?, ?, ?, ?, ?)");
                     if (!$stock_history) {
@@ -129,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Commit the transaction
         $conn->commit();
+        logDebug("Successfully completed stock deduction for Order #$order_id");
 
         // Format the response
         $order_data = [
@@ -148,6 +176,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
     } catch (Exception $e) {
+        logDebug("ERROR: " . $e->getMessage(), [
+            'order_id' => $order_id,
+            'status' => $new_status,
+            'trace' => $e->getTraceAsString()
+        ]);
         $conn->rollback();
         echo json_encode([
             'success' => false,

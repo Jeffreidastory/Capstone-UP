@@ -1,0 +1,295 @@
+/* Verification Request Button Styles */
+.verification-request-btn {
+    background-color: #FF7F50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.verification-request-btn i {
+    font-size: 16px;
+}
+
+.verification-request-btn:hover {
+    background-color: #ff6b3d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 127, 80, 0.2);
+}
+
+.verification-request-btn.has-notifications {
+    position: relative;
+}
+
+.verification-request-btn .notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    border: 2px solid #fff;
+}
+
+/* Verification Modal Styles */
+.verification-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.verification-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content.verification-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .modal-content.verification-modal {
+    background: #2a2d3a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.verification-filters {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+[data-theme="dark"] .verification-filters {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: #374151;
+}
+
+[data-theme="dark"] .filter-group label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+#verificationFilter {
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+[data-theme="dark"] #verificationFilter {
+    background: #32364a;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.requests-scroll {
+    max-height: calc(80vh - 180px);
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* Verification Request Card Styles */
+.verification-request {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .verification-request {
+    background: #32364a;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.verification-request:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .verification-request:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-details h4 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .user-details h4 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.user-details p {
+    margin: 4px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+[data-theme="dark"] .user-details p {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.status-badge.pending {
+    background: rgba(255, 183, 94, 0.2);
+    color: #FF9F50;
+}
+
+.status-badge.approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+}
+
+.status-badge.rejected {
+    background: rgba(239, 68, 68, 0.2);
+    color: #EF4444;
+}
+
+.request-content {
+    margin-top: 16px;
+}
+
+.document-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin: 12px 0;
+    border: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .document-preview {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.action-btn.approve {
+    background: #10B981;
+    color: white;
+}
+
+.action-btn.reject {
+    background: #EF4444;
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Close Button Styles */
+.close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    color: #374151;
+    transform: scale(1.1);
+}
+
+[data-theme="dark"] .close-modal {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .close-modal:hover {
+    color: rgba(255, 255, 255, 0.9);
+}

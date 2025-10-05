@@ -1,0 +1,82 @@
+/* Base styles for the completion chart */
+.completion-chart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.pie-chart-container {
+    position: relative;
+    width: 180px;
+    height: 180px;
+}
+
+.pie-chart {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(#FF7F50 var(--percentage), #FFB75E 0);
+}
+
+.pie-chart::before {
+    content: '';
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    background: #ffffff;
+    z-index: 1;
+}
+
+.pie-center {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.completion-percentage {
+    font-size: 2em;
+    font-weight: bold;
+    color: #FF7F50;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.completion-label {
+    font-size: 0.8em;
+    color: #666666;
+    display: block;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .pie-chart {
+    background: conic-gradient(#FF7F50 var(--percentage), #FFB75E 0);
+    box-shadow: 0 0 20px rgba(255, 127, 80, 0.15);
+}
+
+[data-theme="dark"] .pie-chart::before {
+    background: #1a1c23;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .completion-percentage {
+    color: #FF7F50;
+    text-shadow: 0 0 10px rgba(255, 127, 80, 0.2);
+}
+
+[data-theme="dark"] .completion-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Fix for the percentage calculation */
+.pie-chart {
+    --percentage: calc(var(--completion-rate) * 1%);
+}

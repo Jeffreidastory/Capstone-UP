@@ -2,6 +2,127 @@
 session_start();
 include "../connect.php";
 
+// Add stylesheet for notifications
+echo "<style>
+    #notifHeader {
+        color: #333333;
+    }
+    
+    [data-theme='dark'] #notifHeader {
+        color: #ffffff;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    .verification-modal {
+        background-color: #ffffff;
+        margin: 5% auto;
+        padding: 25px;
+        width: 90%;
+        max-width: 800px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    [data-theme='dark'] .verification-modal {
+        background-color: #2a2d3a;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    [data-theme='dark'] .modal-header {
+        border-bottom-color: rgba(255,255,255,0.1);
+    }
+
+    .modal-header h3 {
+        color: #1a1a1a;
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    [data-theme='dark'] .modal-header h3 {
+        color: #ffffff;
+    }
+
+    .modal-header h3 i {
+        color: #FF7F50;
+    }
+
+    .modal .close {
+        color: #666;
+        font-size: 24px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+    }
+
+    [data-theme='dark'] .modal .close {
+        color: #ffffff;
+    }
+
+    .modal .close:hover {
+        background-color: rgba(255,127,80,0.1);
+        color: #FF7F50;
+    }
+
+    .verification-list {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .verification-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .verification-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .verification-list::-webkit-scrollbar-thumb {
+        background: #FF7F50;
+        border-radius: 4px;
+    }
+
+    [data-theme='dark'] .verification-list::-webkit-scrollbar-track {
+        background: #32364a;
+    }
+
+    [data-theme='dark'] .verification-list::-webkit-scrollbar-thumb {
+        background: #FF7F50;
+    }
+</style>";
+
 // Test database connection
 if ($conn->connect_error) {
     error_log('Database connection failed: ' . $conn->connect_error);
@@ -304,6 +425,8 @@ if ($_SESSION['role_id'] == 1) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="css/inventory.css">
+    <link rel="stylesheet" href="css/inventory-dark.css">
+    <link rel="stylesheet" href="css/table-dark.css">
     <link rel="stylesheet" href="css/role-features.css">
     <link rel="stylesheet" href="css/menu-creation-enhanced.css">
     <link rel="stylesheet" href="css/add-product-form.css">
@@ -314,10 +437,15 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/dark-mode-text.css">
     <link rel="stylesheet" href="css/dark-mode-override.css">
     <link rel="stylesheet" href="css/dark-mode-final.css">
+    <link rel="stylesheet" href="css/verification.css">
+    <link rel="stylesheet" href="css/verification-enhanced.css">
+    <link rel="stylesheet" href="css/completion-chart.css">
+    <link rel="stylesheet" href="css/unified-status-badges.css">
     <link rel="stylesheet" href="css/image-upload.css">
     <link rel="stylesheet" href="css/adm-style.css">
     <link rel="stylesheet" href="css/admin-enhanced.css">
-    <link rel="stylesheet" href="css/notification-style.css">
+    <script src="js/notifications.js"></script>
+    <link rel="stylesheet" href="css/enhanced-notifications.css">
     <link rel="stylesheet" href="css/edit-form.css">
     <link rel="stylesheet" href="css/sidebar-enhanced.css">
     <link rel="stylesheet" href="css/user-roles.css">
@@ -325,6 +453,230 @@ if ($_SESSION['role_id'] == 1) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .verification-modal {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 25px;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        [data-theme="dark"] .verification-modal {
+            background-color: #2a2d3a;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        [data-theme="dark"] .modal-header {
+            border-bottom-color: rgba(255,255,255,0.1);
+        }
+
+        .modal-header h3 {
+            color: #1a1a1a;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        [data-theme="dark"] .modal-header h3 {
+            color: #ffffff;
+        }
+
+        .modal-header h3 i {
+            color: #FF7F50;
+        }
+
+        .modal .close {
+            color: #666;
+            font-size: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        [data-theme="dark"] .modal .close {
+            color: #ffffff;
+        }
+
+        .modal .close:hover {
+            background-color: rgba(255,127,80,0.1);
+            color: #FF7F50;
+        }
+
+        .verification-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .verification-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .verification-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .verification-list::-webkit-scrollbar-thumb {
+            background: #FF7F50;
+            border-radius: 4px;
+        }
+
+        [data-theme="dark"] .verification-list::-webkit-scrollbar-track {
+            background: #32364a;
+        }
+
+        [data-theme="dark"] .verification-list::-webkit-scrollbar-thumb {
+            background: #FF7F50;
+        }
+
+        /* User Accounts Table Styles */
+        .user-accounts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .user-accounts-table th {
+            background-color: #f8f9fa;
+            color: #1a1a1a;
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .user-accounts-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #4b5563;
+        }
+        
+        .user-accounts-table tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        [data-theme="dark"] .user-accounts-table {
+            background: #2a2d3a;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-theme="dark"] .user-accounts-table th {
+            background-color: #32364a;
+            color: #ffffff;
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-theme="dark"] .user-accounts-table td {
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-theme="dark"] .user-accounts-table tr:hover {
+            background-color: #32364a;
+        }
+
+        /* Role Badge Styles */
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .role-badge.admin {
+            background-color: #FFF3E0;
+            color: #FF7F50;
+        }
+
+        .role-badge.customer {
+            background-color: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        [data-theme="dark"] .role-badge.admin {
+            background-color: rgba(255, 127, 80, 0.2);
+            color: #FF9F50;
+        }
+
+        [data-theme="dark"] .role-badge.customer {
+            background-color: rgba(46, 125, 50, 0.2);
+            color: #4CAF50;
+        }
+
+        /* Consistent Header Layout */
+        #inventory-section .header-content,
+        #orders-section .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 24px;
+        }
+
+        /* Header Icons Layout */
+        .header-icons {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-right: 8px;
+        }
+        
+        .theme-toggle, .notification-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+
+        .theme-toggle i, .notification-icon i {
+            font-size: 20px;
+            color: #FF7F50;
+        }
+
+        .profile-section {
+            margin-left: 8px;
+        }
+
         /* Role Card Styles */
         .role-card {
             background: #ffffff;
@@ -448,6 +800,76 @@ if ($_SESSION['role_id'] == 1) {
 
         [data-theme='dark'] .create-button {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Dark Mode Inventory Styles */
+        [data-theme="dark"] .inventory-table-container {
+            background: #1a1c23;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 1px solid #2d3748;
+        }
+
+        [data-theme="dark"] table {
+            background: #1a1c23;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] th {
+            background-color: #2d3748 !important;
+            color: #e2e8f0;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        [data-theme="dark"] td {
+            border-color: #2d3748;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] tr:hover {
+            background-color: #2d3748 !important;
+        }
+
+        [data-theme="dark"] .filter-select,
+        [data-theme="dark"] #inventorySearch {
+            background-color: #1a1c23;
+            border: 1px solid #2d3748;
+            color: #e2e8f0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .filter-select option {
+            background-color: #1a1c23;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] #inventorySearch::placeholder {
+            color: #718096;
+        }
+
+        [data-theme="dark"] .status-badge.Sufficient {
+            background-color: #2f855a;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .status-badge.Critical {
+            background-color: #c53030;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .status-badge.Out {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .product-actions button {
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .product-actions button:hover {
+            background-color: #4a5568;
+        }
         }
 
         .roles-grid {
@@ -1158,6 +1580,14 @@ if ($_SESSION['role_id'] == 1) {
             box-shadow: 0 3px 8px rgba(255, 127, 80, 0.2);
         }
 
+        /* Ensure consistent search bar across all sections */
+        .inventory-section .search-container,
+        .orders-section .search-container {
+            width: 250px !important;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
         @media (max-width: 768px) {
             .stats-container {
                 grid-template-columns: 1fr;
@@ -1200,6 +1630,37 @@ if ($_SESSION['role_id'] == 1) {
             display: flex;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle, 
+        .notification-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .theme-toggle i, 
+        .notification-icon i {
+            font-size: 20px;
+            color: #FF7F50;
+        }
+
+        .profile-section {
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
         }
 
         [data-theme="dark"] .main-header {
@@ -1209,16 +1670,55 @@ if ($_SESSION['role_id'] == 1) {
 
         .header-content {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             width: 100%;
             margin: 0 auto;
-            gap: 24px;
+            padding: 0 16px;
+            position: relative;
+            gap: 16px;
+        }
+
+        .header-content > div {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-container {
+            flex: 1;
+            margin: 0 24px;
+        }
+        
+        .header-content > div:last-child {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .theme-toggle,
+        .notification-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .profile-section {
+            margin-left: 8px;
         }
         
         .header-left {
-            min-width: 200px;
+            width: 200px;
             flex-shrink: 0;
+        }
+
+        .header-actions {
+            width: 150px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
         }
 
         .header-content h1 {
@@ -1231,7 +1731,10 @@ if ($_SESSION['role_id'] == 1) {
 
         .search-container {
             position: relative;
-            margin-right: 20px;
+            width: 750px !important;
+            flex-shrink: 0;
+            margin: 0;
+            margin-left: 24px;
         }
 
         .search-container input {
@@ -1298,13 +1801,15 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .enhanced-search {
-            width: 800px !important;
-            padding: 8px 12px 8px 38px !important;
-            border: 2px solid transparent !important;
-            border-radius: 50px !important;
-            font-size: 14px !important;
-            color: var(--text-primary) !important;
-            background: var(--bg-tertiary) !important;
+            width: 750px !important;
+            max-width: 750px !important;
+            padding: 6px 12px 6px 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            background: rgba(45, 48, 58, 0.8);
+            transition: all 0.3s ease;
 
         }
 
@@ -1325,6 +1830,9 @@ if ($_SESSION['role_id'] == 1) {
         }
 
         .enhanced-search:hover {
+            box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.1);
+            background: rgba(255, 127, 80, 0.05) !important;
+
             background: #ffffff !important;
             box-shadow: 0 4px 12px rgba(255, 127, 80, 0.15) !important;
         }
@@ -1372,6 +1880,14 @@ if ($_SESSION['role_id'] == 1) {
         .profile-info:hover {
             background-color: #ffe4d9;
         }
+        
+        .admin-name {
+            transition: color 0.2s ease;
+        }
+        
+        [data-theme="dark"] .profile-info:hover {
+            background-color: rgba(255, 127, 80, 0.2);
+        }
 
         .admin-name {
             font-size: 14px;
@@ -1381,7 +1897,14 @@ if ($_SESSION['role_id'] == 1) {
             margin-left: 4px;
             white-space: nowrap;
             letter-spacing: 0.2px;
-            text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+        }
+
+        [data-theme="dark"] .admin-name {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .profile-info:hover .admin-name {
+            color: #FF7F50 !important;
         }
         [data-theme="dark"] .admin-name {
             color: #ffffff;
@@ -1527,6 +2050,36 @@ if ($_SESSION['role_id'] == 1) {
             animation: progress 3s linear;
         }
 
+        /* Theme Toggle and Notification Styles */
+        .theme-toggle, .notification-icon {
+            padding: 6px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Notification Styles */
+        #notificationDropdown {
+            background: var(--bg-tertiary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-text {
+            color: var(--text-primary);
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        [data-theme='dark'] .notification-text {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        [data-theme='light'] .notification-text {
+            color: #333;
+        }
+
         /* Theme Toggle Styles */
         .theme-toggle {
             cursor: pointer;
@@ -1570,7 +2123,24 @@ if ($_SESSION['role_id'] == 1) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <script src="js/enhanced-notifications.js"></script>
+    <script src="js/verification-handler-final2.js"></script>
     <div id="notificationContainer"></div>
+    
+    <!-- Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content verification-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-id-card"></i> ID Verification Requests</h3>
+                <span class="close" onclick="closeVerificationModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="verification-list" id="verificationList">
+                    <!-- Verification requests will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Out of Stock Top Notification -->
     <div id="outOfStockAlert" class="alert-modal">
@@ -1584,6 +2154,22 @@ if ($_SESSION['role_id'] == 1) {
             </div>
         </div>
         <button onclick="closeOutOfStockModal()" class="alert-button">
+            Acknowledge
+        </button>
+    </div>
+
+    <!-- Critical Stock Alert -->
+    <div id="criticalStockAlert" class="alert-modal">
+        <div class="alert-content">
+            <div class="alert-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Critical Stock Items Alert</span>
+            </div>
+            <div id="criticalStockList">
+                <!-- Items will be inserted here dynamically -->
+            </div>
+        </div>
+        <button onclick="closeCriticalStockModal()" class="alert-button">
             Acknowledge
         </button>
     </div>
@@ -1692,6 +2278,112 @@ if ($_SESSION['role_id'] == 1) {
             color: rgba(255,255,255,0.7);
         }
     </style>
+
+    <!-- Verification Modal -->
+    <div id="verificationModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 5% auto; padding: 20px; width: 90%; max-width: 800px; border-radius: 8px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3><i class="fas fa-id-card"></i> ID Verification Requests</h3>
+                <span class="close" onclick="closeVerificationModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="verificationList" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Verification requests will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showVerificationModal() {
+        const modal = document.getElementById('verificationModal');
+        modal.style.display = 'block';
+        loadVerificationRequests();
+    }
+
+    function closeVerificationModal() {
+        const modal = document.getElementById('verificationModal');
+        modal.style.display = 'none';
+    }
+
+    function loadVerificationRequests() {
+        fetch('get_verification_requests.php')
+            .then(response => response.json())
+            .then(data => {
+                const verificationList = document.getElementById('verificationList');
+                if (!data || data.length === 0) {
+                    verificationList.innerHTML = '<div style="text-align: center; padding: 20px;">No pending verification requests</div>';
+                    return;
+                }
+
+                verificationList.innerHTML = data.map(request => `
+                    <div class="verification-item" data-user-id="${request.user_id}" style="padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <img src="${request.profile_picture || '../images/user.png'}" style="width: 50px; height: 50px; border-radius: 50%;">
+                            <div>
+                                <h4 style="margin: 0;">${request.first_name} ${request.last_name}</h4>
+                                <p style="margin: 5px 0; color: #666;">${new Date(request.verification_date).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <img src="../uploaded_img/${request.id_document}" style="max-width: 100%; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="handleVerification(${request.user_id}, 'approved')" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Approve</button>
+                            <button onclick="handleVerification(${request.user_id}, 'rejected')" style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Update pending count
+                const pendingCount = document.querySelector('.pending-count');
+                if (pendingCount) {
+                    pendingCount.textContent = data.length;
+                }
+            });
+    }
+
+    function handleVerification(userId, status) {
+        fetch('update_verification_status.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Success', `Verification ${status} successfully`, 'success');
+                // Find and remove the verification item
+                const verificationItem = document.querySelector(`.verification-item[data-user-id="${userId}"]`);
+                if (verificationItem) {
+                    verificationItem.remove();
+                    // Check if there are any remaining verification items
+                    const remainingItems = document.querySelectorAll('.verification-item');
+                    if (remainingItems.length === 0) {
+                        document.getElementById('verificationList').innerHTML = 
+                            '<div style="text-align: center; padding: 20px;">No pending verification requests</div>';
+                    }
+                }
+            } else {
+                showNotification('Error', data.message || 'Failed to update verification status', 'error');
+            }
+        });
+    }
+
+    // Add click event listener for the verification button
+    document.addEventListener('DOMContentLoaded', function() {
+        const verificationBtn = document.getElementById('verificationRequestBtn');
+        if (verificationBtn) {
+            verificationBtn.addEventListener('click', showVerificationModal);
+        }
+    });
+    </script>
+
     <div class="sidebar">
         <div class="sidebar-header">
             <img src="../images/logo.png" alt="Logo" class="logo">
@@ -1752,7 +2444,7 @@ if ($_SESSION['role_id'] == 1) {
             <li class="menu-item" id="reports-item">
                 <a href="#" data-section="reports">
                     <i class="fas fa-chart-line"></i>
-                    <span>Reports & Analytics</span>
+                    <span>Reports</span>
                 </a>
             </li>
             <li class="menu-item" id="orders-item">
@@ -1783,28 +2475,31 @@ if ($_SESSION['role_id'] == 1) {
                         <h1>Dashboard</h1>
                     </div>
                 </div>
-                <div class="search-container" style="position: relative; margin: 0 auto;">
-                    <i class="fas fa-search search-icon" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; font-size: 14px;"></i>
-                    <input type="text" placeholder="Search anything..." class="enhanced-search" style="width: 600px !important; padding-left: 40px;">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 12px;"></i>
+                    <input type="text" placeholder="Search anything..." class="enhanced-search" style="width: 100%;">
                 </div>
-                <div class="notification-icon" style="margin-left: 20px; position: relative; cursor: pointer;" onclick="toggleNotifications()">
-                    <i class="fas fa-bell" style="font-size: 20px; color: #FF7F50; filter: drop-shadow(0 2px 4px rgba(255, 127, 80, 0.2));"></i>
-                    <span id="notifCount" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background: #FF7F50; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(255, 127, 80, 0.2);">0</span>
-                </div>
-                <!-- Dark Mode Toggle -->
-                <div class="theme-toggle" onclick="toggleDarkMode()">
-                    <i class="fas fa-sun" id="themeIcon"></i>
+                <div style="display: flex; align-items: center; gap: 16px; justify-self: end;">
+                    <!-- Dark Mode Toggle -->
+                    <div class="theme-toggle" onclick="toggleDarkMode()" style="cursor: pointer; display: flex; align-items: center; padding: 0;">
+                        <i class="fas fa-sun" id="themeIcon" style="font-size: 20px;"></i>
+                    </div>
+                    <!-- Notification Icon -->
+                    <div class="notification-icon" style="position: relative; cursor: pointer; display: flex; align-items: center; padding: 0;" onclick="toggleNotifications()">
+                        <i class="fas fa-bell" style="font-size: 20px; color: #FF7F50; filter: drop-shadow(0 2px 4px rgba(255, 127, 80, 0.2));"></i>
+                        <span id="notifCount" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background: #FF7F50; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(255, 127, 80, 0.2);">0</span>
+                    </div>
                 </div>
                 <!-- Notification Dropdown -->
                 <div id="notificationDropdown" style="display: none; position: absolute; top: 50px; right: 20px; width: 320px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000;">
                     <div style="padding: 15px; border-bottom: 1px solid #f0f0f0;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-weight: 600; color: #333;">Stock Notifications</div>
-                            <button onclick="markAllAsRead()" id="markAllBtn" style="padding: 4px 8px; font-size: 12px; color: #FF7F50; background: none; border: 1px solid #FF7F50; border-radius: 4px; cursor: pointer; display: none;">Mark all as read</button>
+                            <div id="notifHeader" style="font-weight: 600;">Notifications</div>
+                            <button onclick="markAllAsRead()" id="markAllBtn" style="padding: 4px 8px; font-size: 12px; color: #FF7F50; background: none; border: 1px solid #FF7F50; border-radius: 4px; cursor: pointer; margin-left: 10px; display: none;">Mark all as read</button>
                         </div>
                     </div>
-                    <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
-                        <!-- Notifications will be inserted here -->
+                    <div id="notificationList">
+                        <div class="notification-text">No new notifications</div>
                     </div>
                 </div>
                 <div class="profile-section">
@@ -1981,10 +2676,10 @@ if ($_SESSION['role_id'] == 1) {
                         ?>
                         <div class="completion-chart">
                             <div class="pie-chart-container">
-                                <div class="pie-chart" style="background: conic-gradient(#FF7F50 <?php echo $completion_rate; ?>%, #FFB75E 0)">
+                                <div class="pie-chart" style="--completion-rate: <?php echo $completion_rate; ?>">
                                     <div class="pie-center">
                                         <span class="completion-percentage"><?php echo round($completion_rate); ?>%</span>
-                                        <span class="completion-label">Completion<br>Rate</span>
+                                        <span class="completion-label">COMPLETION<br>RATE</span>
                                     </div>
                                 </div>
                             </div>
@@ -2070,7 +2765,7 @@ if ($_SESSION['role_id'] == 1) {
                     </div>
                     <div class="stat-details">
                         <div class="stat-number"><?php echo $low_stock_count; ?></div>
-                        <div class="stat-label">Low Stock</div>
+                        <div class="stat-label">Critical Stock</div>
                         <div class="stat-sublabel">Items need restock</div>
                     </div>
                     <div class="stat-chart">
@@ -2110,14 +2805,14 @@ if ($_SESSION['role_id'] == 1) {
             <!-- Inventory Table -->
             <div class="inventory-table-container" style="margin-top: 0; position: relative;">
                 <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to right, #FFB75E, #FF7F50);"></div>
-                <div class="table-header" style="margin-top: 5px; height: 50px; padding: 0.75rem 1rem;">
+                <div class="table-header dark-mode-header" style="margin-top: 5px; height: 50px; padding: 0.75rem 1rem; background: transparent;">
                     <div class="table-title">
-                        <h3 style="font-size: 18px; font-weight: 600; color: #333; margin: 0; white-space: nowrap;">Product Inventory</h3>
+                        <h3 class="inventory-title">Product Inventory</h3>
                     </div>
                     <div class="inventory-filters" style="padding: 12px; display: flex; align-items: center; position: relative; margin-bottom: 15px;">
                         <div class="search-box" style="position: relative; margin: 0 150px 0 auto;">
                             <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; font-size: 14px;"></i>
-                            <input type="text" id="inventorySearch" placeholder="Search products..." style="box-shadow: 0 2px 15px rgba(255, 183, 94, 0.2); border-radius: 50px; width: 600px; padding-left: 40px;">
+                            <input type="text" id="inventorySearch" placeholder="Search products..." class="dark-mode-search" style="box-shadow: 0 2px 15px rgba(255, 183, 94, 0.2); border-radius: 50px; width: 600px; padding-left: 40px;">
                         </div>
                         <div class="filter-group" style="margin-left: auto; padding-right: 20px;">
                             <select id="categoryFilter" class="filter-select">
@@ -2129,8 +2824,7 @@ if ($_SESSION['role_id'] == 1) {
                             <select id="statusFilter" class="filter-select">
                                 <option value="all">All Status</option>
                                 <option value="out">Out of Stock</option>
-                                <option value="low">Low Stock (≤10)</option>
-                                <option value="critical">Critical Stock (≤5)</option>
+                                <option value="low">Critical Stock (≤10)</option>
                                 <option value="in">In Stock</option>
                             </select>
                         </div>
@@ -2282,10 +2976,10 @@ if ($_SESSION['role_id'] == 1) {
                                     $stock_status = 'Out of Stock';
                                     $status_class = 'out-of-stock';
                                 } else if($product['stock'] <= 10) {
-                                    $stock_status = 'Low Stock';
+                                    $stock_status = 'Critical Stock';
                                     $status_class = 'low-stock';
                                 } else {
-                                    $stock_status = 'In Stock';
+                                    $stock_status = 'Sufficient';
                                     $status_class = 'in-stock';
                                 }
                         ?>
@@ -2349,10 +3043,8 @@ if ($_SESSION['role_id'] == 1) {
             <?php if(isset($message) && is_array($message)): ?>
                 <?php foreach($message as $msg): ?>
                     <script>
-                        showNotification(
-                            '<?php echo strpos($msg, 'successfully') !== false ? 'Success' : 'Error' ?>',
-                            '<?php echo addslashes($msg) ?>',
-                            '<?php echo strpos($msg, 'successfully') !== false ? 'success' : 'error' ?>'
+                        showNotification(<?php echo strpos($msg, 'successfully') !== false ? "'Success'" : "'Error'" ?>,                             '<?php echo strpos($msg, 'successfully') !== false ? 'Success' : 'Error' ?>',
+                            '<?php echo addslashes($msg) ?>'
                         );
                     </script>
                 <?php endforeach; ?>
@@ -2553,7 +3245,7 @@ if ($_SESSION['role_id'] == 1) {
                     <ul class="role-features">
                         <li><i class="fas fa-check"></i> Full system access</li>
                         <li><i class="fas fa-check"></i> User management</li>
-                        <li><i class="fas fa-check"></i> Reports & Analytics</li>
+                        <li><i class="fas fa-check"></i> Reports</li>
                     </ul>
                     <button class="create-btn" onclick="showCreateUserForm(2)">
                         <i class="fas fa-plus"></i> Create Admin
@@ -3128,46 +3820,55 @@ if ($_SESSION['role_id'] == 1) {
 
         <!-- User Accounts Section -->
         <section id="accounts-section" class="content-section hidden">
-          
-
             <!-- Users Table -->
             <div class="users-table-container">
                 <h3>Registered Users</h3>
-                <div class="table-actions">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="userSearch" placeholder="Search users..." style="width: 300px;">
+                <div class="table-actions" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-right: auto;">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="userSearch" placeholder="Search users..." style="width: 300px;">
+                        </div>
                     </div>
-                    <select id="roleFilter" class="role-filter">
+                    <select id="roleFilter" style="background: #FF7F50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=\"white\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); background-repeat: no-repeat; background-position: right 8px center; min-width: 140px; transition: all 0.3s ease;">
                         <option value="all">All Roles</option>
                         <option value="2">Administrators</option>
                         <option value="3">Crew Members</option>
                         <option value="4">Customers</option>
                     </select>
+                    <button onclick="showVerificationModal()" class="verification-btn" style="background: #FF7F50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.3s ease;">
+                        <i class="fas fa-id-card"></i> ID Verification Requests
+                        <span class="pending-count" style="background: white; color: #FF7F50; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: bold;">0</span>
+                    </button>
                 </div>
-                <style>
-                .table-responsive {
-                    overflow-x: auto;
-                    border-radius: 8px;
-                    background: #ffffff;
-                    transition: background-color 0.3s ease;
-                }
-                .users-table {
-                    font-size: 14px;
-                    width: 100%;
-                    min-width: 1200px;
-                    background: transparent;
-                }
-                .users-table th, .users-table td {
-                    padding: 12px 16px;
-                    white-space: nowrap;
-                    max-width: 200px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    transition: all 0.3s ease;
-                }
 
-                [data-theme="dark"] .table-responsive {
+                <style>
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+            background: #ffffff;
+            transition: background-color 0.3s ease;
+            visibility: visible !important;
+            display: block !important;
+        }
+        .users-table {
+            font-size: 14px;
+            width: 100%;
+            min-width: 1200px;
+            background: transparent;
+            visibility: visible !important;
+            display: table !important;
+        }
+        .users-table th, .users-table td {
+            padding: 12px 16px;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+            visibility: visible !important;
+            display: table-cell !important;
+        }                [data-theme="dark"] .table-responsive {
                     background: #262833;
                     border-radius: 8px;
                     overflow: hidden;
@@ -3266,14 +3967,135 @@ if ($_SESSION['role_id'] == 1) {
                     letter-spacing: 0.3px;
                 }
 
-                .table-actions {
-                    margin-bottom: 20px;
-                    display: flex;
-                    gap: 15px;
-                    align-items: center;
-                }
+        .table-actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
 
-                [data-theme="dark"] .table-actions input,
+        .verification-btn {
+            background: #FF7F50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .verification-btn:hover {
+            background: #ff6b3d;
+            transform: translateY(-1px);
+        }
+
+        .pending-count {
+            background: #fff;
+            color: #FF7F50;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .verification-modal {
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .verification-filters {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .verification-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Orders table column widths */
+        .orders-table .order-id-col { width: 100px; }
+        .orders-table .customer-col { width: 200px; }
+        .orders-table .address-col { width: 200px; }
+        .orders-table .payment-col { width: 120px; }
+        .orders-table .items-col { width: 200px; }
+        .orders-table .total-col { width: 100px; }
+        .orders-table .status-col { width: 100px; }
+        .orders-table .time-col { width: 150px; }
+        .orders-table .actions-col { width: 100px; }
+
+        .verification-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .verification-details {
+            flex: 1;
+        }
+
+        .verification-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .approve-btn, .reject-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .approve-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .reject-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .verification-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        [data-theme="dark"] .verification-modal {
+            background: #2a2d3a;
+        }
+
+        [data-theme="dark"] .verification-filters {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .verification-item {
+            border-color: rgba(255, 255, 255, 0.1);
+        }                [data-theme="dark"] .table-actions input,
                 [data-theme="dark"] .table-actions select {
                     background: #151521;
                     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -3313,6 +4135,45 @@ if ($_SESSION['role_id'] == 1) {
                     color: #ffffff;
                     border-radius: 6px;
                     padding: 10px 15px;
+                }
+
+                /* Enhanced dropdown and button styles */
+                #roleFilter {
+                    box-shadow: 0 2px 4px rgba(255, 127, 80, 0.1);
+                }
+
+                #roleFilter:hover {
+                    background: #ff6b3d;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(255, 127, 80, 0.2);
+                }
+
+                #roleFilter:focus {
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.3);
+                }
+
+                /* Dark mode styles for the enhanced dropdown */
+                [data-theme="dark"] #roleFilter {
+                    background: #FF7F50;
+                    color: white;
+                    border: none;
+                }
+
+                [data-theme="dark"] #roleFilter:hover {
+                    background: #ff6b3d;
+                }
+
+                [data-theme="dark"] #roleFilter option {
+                    background: #2a2d3a;
+                    color: white;
+                    padding: 8px;
+                }
+
+                .verification-btn:hover {
+                    background: #ff6b3d !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(255, 127, 80, 0.2);
                 }
 
                 [data-theme="dark"] .users-table-container h3 {
@@ -3421,15 +4282,15 @@ if ($_SESSION['role_id'] == 1) {
                     <table class="orders-table">
                         <thead>
                             <tr>
-                                <th style="width: 100px;">Order ID</th>
-                                <th style="width: 200px;">Customer</th>
-                                <th style="width: 200px;">Delivery Address</th>
-                                <th style="width: 120px;">Payment</th>
-                                <th style="width: 200px;">Ordered Items</th>
-                                <th style="width: 100px;">Total</th>
-                                <th style="width: 100px;">Status</th>
-                                <th style="width: 150px;">Order Time</th>
-                                <th style="width: 100px;">Actions</th>
+                                <th class="order-id-col">Order ID</th>
+                                <th class="customer-col">Customer</th>
+                                <th class="address-col">Delivery Address</th>
+                                <th class="payment-col">Payment</th>
+                                <th class="items-col">Ordered Items</th>
+                                <th class="total-col">Total</th>
+                                <th class="status-col">Status</th>
+                                <th class="time-col">Order Time</th>
+                                <th class="actions-col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3528,6 +4389,27 @@ if ($_SESSION['role_id'] == 1) {
                         <h3>Order Details</h3>
                         <span class="close-modal">&times;</span>
                     </div>
+
+            <!-- Verification Requests Modal -->
+            <div id="verificationModal" class="modal">
+                <div class="modal-content verification-modal">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-id-card"></i> ID Verification Requests</h3>
+                        <span class="close-modal" onclick="closeVerificationModal()">&times;</span>
+                    </div>
+                    <div class="verification-filters">
+                        <select id="verificationFilter">
+                            <option value="all">All Requests</option>
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="verification-list" id="verificationList">
+                        <!-- Verification requests will be loaded here -->
+                    </div>
+                </div>
+            </div>
                     <div class="modal-body">
                         <!-- Order details will be loaded here -->
                     </div>
@@ -3796,6 +4678,22 @@ if ($_SESSION['role_id'] == 1) {
             z-index: 1000;
         }
 
+        .verification-btn:hover {
+            background: #ff6b3d !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(255,127,80,0.2);
+        }
+
+        [data-theme="dark"] .verification-btn {
+            background: #FF7F50 !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .verification-btn:hover {
+            background: #ff6b3d !important;
+            box-shadow: 0 2px 5px rgba(255,127,80,0.4);
+        }
+
         .modal-content {
             background: white;
             width: 90%;
@@ -3855,7 +4753,7 @@ if ($_SESSION['role_id'] == 1) {
                 'menu-creation': { title: 'Menu Creation', icon: 'fas fa-utensils' },
                 'roles': { title: 'User Roles', icon: 'fas fa-user-shield' },
                 'accounts': { title: 'User Accounts', icon: 'fas fa-users-cog' },
-                'reports': { title: 'Reports & Analytics', icon: 'fas fa-chart-line' },
+                'reports': { title: 'Reports', icon: 'fas fa-chart-line' },
                 'orders': { title: 'Order Management', icon: 'fas fa-shopping-basket' },
                 'landing': { title: 'Landing Settings', icon: 'fas fa-home' }
             };
@@ -3884,44 +4782,7 @@ if ($_SESSION['role_id'] == 1) {
             });
         });
 
-        function showNotification(title, message, type = 'info') {
-            // Check if this is a fresh page load without any action parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('action')) {
-                return; // Don't show notifications if this is a redirect with action
-            }
-            
-            const container = document.getElementById('notificationContainer');
-            if (!container) {
-                console.error('Notification container not found');
-                return;
-            }
-            
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            
-            // Create notification content
-            notification.innerHTML = `
-                <i class="notification-icon fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-                <div class="notification-content">
-                    <div class="notification-title">${title}</div>
-                    <div class="notification-message">${message}</div>
-                </div>
-                <button class="notification-close" onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-                <div class="notification-progress"></div>
-            `;
-            
-            // Add to container
-            container.appendChild(notification);
-            
-            // Remove after animation
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
+
 
         // Form validation function
         function validateForm() {
@@ -4041,6 +4902,11 @@ if ($_SESSION['role_id'] == 1) {
             if (sectionToShow) {
                 sectionToShow.classList.add('active');
                 sectionToShow.style.display = 'block';
+                
+                // Update verification count when showing User Accounts section
+                if (sectionId === 'accounts') {
+                    updateVerificationCount();
+                }
             }
             
             // Update URL without reloading
@@ -4096,7 +4962,7 @@ document.getElementById('stockUpdateForm')?.addEventListener('submit', function(
                     showNotification('Error', result.error || 'Failed to update stock', 'error');
                 }
             } catch(e) {
-                showNotification('Error', 'Unexpected error occurred', 'error');
+                notifications.showError('Error', 'Unexpected error occurred');
             }
         },
         error: function() {
@@ -4139,11 +5005,26 @@ document.getElementById('stockUpdateForm')?.addEventListener('submit', function(
             });
         });
 
+        // Theme persistence
+        function setTheme(isDark) {
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme === 'dark');
+        }
+
+        // Call this on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+        });
+
         function toggleDarkMode() {
-            const settingsSection = document.getElementById('settings-section');
-            const darkModeStatus = document.getElementById('dark-mode-status');
-            const isDarkMode = settingsSection.classList.toggle('dark-mode');
-            darkModeStatus.textContent = isDarkMode ? 'Dark mode is on' : 'Dark mode is off';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme === 'dark');
         }
 
         // Close edit form
@@ -4337,7 +5218,7 @@ function completeOrder(orderId) {
                     showNotification('Error', result.error || 'Unable to complete the order.', 'error');
                 }
             } catch (e) {
-                showNotification('Error', 'Unexpected error occurred', 'error');
+                notifications.showError('Error', 'Unexpected error occurred');
             }
         },
         error: function() {
@@ -4410,50 +5291,15 @@ document.querySelector('.close-modal')?.addEventListener('click', function() {
 <script src="js/user-roles.js"></script>
 
 <script>
-function showNotification(title, message, type = 'info') {
-    const container = document.getElementById('notificationContainer');
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    // Create notification content
-    notification.innerHTML = `
-        <i class="notification-icon fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-        <div class="notification-content">
-            <div class="notification-title">${title}</div>
-            <div class="notification-message">${message}</div>
-        </div>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-        <div class="notification-progress"></div>
-    `;
-    
-    // Add to container
-    container.appendChild(notification);
-    
-    // Remove after animation
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
+
 
 // Function to handle AJAX responses
 function handleAjaxResponse(response, action) {
-    let title, message, type;
-    
     if (response.success) {
-        title = 'Success';
-        message = `Item ${action} successfully`;
-        type = 'success';
+        notifications.showSuccess('Success', `Item ${action} successfully`);
     } else {
-        title = 'Error';
-        message = response.error || `Failed to ${action} item`;
-        type = 'error';
+        showNotification('Error', response.error || `Failed to ${action} item`, 'error');
     }
-    
-    showNotification(title, message, type);
 }
 
 // Update message handling for form submissions
@@ -4477,7 +5323,7 @@ window.addEventListener('load', function() {
     if (pending) {
         const {action, timestamp} = JSON.parse(pending);
         if (Date.now() - timestamp < 1000) { // Only show if recent
-            showNotification('Success', `Item ${action} successfully`, 'success');
+            notifications.showSuccess('Success', `Item ${action} successfully`);
         }
         sessionStorage.removeItem('pendingNotification');
     }
@@ -4553,6 +5399,26 @@ window.addEventListener('load', function() {
                 }, 300);
             }
 
+            function closeCriticalStockModal() {
+                const alert = document.getElementById('criticalStockAlert');
+                const overlay = document.getElementById('pageOverlay');
+                const mainContent = document.getElementById('mainContent');
+                
+                // Set flag in sessionStorage to prevent reshowing
+                sessionStorage.setItem('criticalStockModalShown', 'true');
+                
+                alert.style.opacity = '0';
+                overlay.style.opacity = '0';
+                mainContent.style.filter = 'none';
+                
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                    overlay.style.display = 'none';
+                    alert.style.opacity = '1';
+                    overlay.style.opacity = '1';
+                }, 300);
+            }
+
             document.addEventListener('DOMContentLoaded', function() {
                 // Show the modal when page loads
                 showOutOfStockModal();
@@ -4585,9 +5451,6 @@ window.addEventListener('load', function() {
                                     break;
                                 case 'low':
                                     if (stock > 10 || stock <= 0) showRow = false;
-                                    break;
-                                case 'critical':
-                                    if (stock > 5 || stock <= 0) showRow = false;
                                     break;
                                 case 'in':
                                     if (stock <= 0) showRow = false;
@@ -4681,7 +5544,7 @@ window.addEventListener('load', function() {
                         notifications.push({ name: productName, category: category, type: 'out', stock: stock });
                         count++;
                     } else if (stock <= 10 && stock > 0) {
-                        notifications.push({ name: productName, category: category, type: 'low', stock: stock });
+                        notifications.push({ name: productName, category: category, type: 'critical', stock: stock });
                         count++;
                     }
                 });
@@ -4708,23 +5571,41 @@ window.addEventListener('load', function() {
                 }
 
                 if (notifications.length === 0) {
-                    listHTML = '<div style="padding: 15px; color: #666; text-align: center;">No new notifications</div>';
+                    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+                    listHTML = `<div style="padding: 15px; color: ${isDarkMode ? '#e1e1e1' : '#666'}; text-align: center; background: ${isDarkMode ? '#1e2028' : 'white'};">No new notifications</div>`;
                 } else {
+                    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
                     notifications.forEach(item => {
                         const isOutOfStock = item.type === 'out';
                         const isRead = readNotifications.has(item.name);
-                        const backgroundColor = isRead ? '#f8f9fa' : (isOutOfStock ? '#fff5f5' : '#fff8e6');
-                        const textColor = isRead ? '#999' : (isOutOfStock ? '#dc3545' : '#ffa500');
-                        const status = isOutOfStock ? 'Out of Stock' : 'Low Stock';
+                        
+                        // Define colors based on theme
+                        let backgroundColor, titleColor, categoryColor, statusColor, borderColor;
+                        
+                        if (isDarkMode) {
+                            backgroundColor = '#1e2028';
+                            titleColor = '#e1e1e1';
+                            categoryColor = '#b0b0b0';
+                            statusColor = isOutOfStock ? '#ff6b6b' : '#ffb84d';
+                            borderColor = '#2a2a33';
+                        } else {
+                            backgroundColor = isRead ? '#f8f9fa' : (isOutOfStock ? '#fff5f5' : '#fff8e6');
+                            titleColor = '#333';
+                            categoryColor = '#666';
+                            statusColor = isRead ? '#999' : (isOutOfStock ? '#dc3545' : '#ffa500');
+                            borderColor = '#f0f0f0';
+                        }
+                        
+                        const status = isOutOfStock ? 'Out of Stock' : 'Critical Stock';
                         
                         listHTML += `
-                            <div style="padding: 12px 15px; border-bottom: 1px solid #f0f0f0; background: ${backgroundColor};">
+                            <div class="notification-item" style="padding: 12px 15px; border-bottom: 1px solid ${borderColor}; background: ${backgroundColor};">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <div>
-                                        <div style="font-weight: 500; color: #333;">${item.name}</div>
-                                        <div style="font-size: 0.85em; color: #666;">${item.category}</div>
+                                        <div style="font-weight: 500; color: ${titleColor};">${item.name}</div>
+                                        <div style="font-size: 0.85em; color: ${categoryColor};">${item.category}</div>
                                     </div>
-                                    <div style="color: ${textColor}; font-size: 0.85em; font-weight: 500;">${status}</div>
+                                    <div style="color: ${statusColor}; font-size: 0.85em; font-weight: 500;">${status}</div>
                                 </div>
                             </div>`;
                     });
@@ -4777,6 +5658,20 @@ window.addEventListener('load', function() {
                 setTheme(theme, isInitial = false) {
                     const isDark = theme === this.DARK_THEME;
                     
+                    // Ensure table content remains visible
+                    const tables = document.querySelectorAll('.users-table');
+                    tables.forEach(table => {
+                        // Force table to remain visible
+                        table.style.visibility = 'visible';
+                        table.style.display = 'table';
+                        
+                        // Ensure all cells are visible
+                        table.querySelectorAll('th, td').forEach(cell => {
+                            cell.style.visibility = 'visible';
+                            cell.style.display = 'table-cell';
+                        });
+                    });
+                    
                     // Update DOM
                     if (isDark) {
                         this.htmlElement.setAttribute('data-theme', 'dark');
@@ -4796,12 +5691,55 @@ window.addEventListener('load', function() {
                         window.revenueChart.update();
                     }
 
+                    // Force table redraw after theme change
+                    requestAnimationFrame(() => {
+                        tables.forEach((table, tableIndex) => {
+                            const rows = table.querySelectorAll('tr');
+                            rows.forEach((row, rowIndex) => {
+                                const state = tableStates[tableIndex].rows[rowIndex];
+                                if (state) {
+                                    row.style.display = state.display;
+                                    if (state.innerHTML && row.innerHTML !== state.innerHTML) {
+                                        row.innerHTML = state.innerHTML;
+                                    }
+                                }
+                            });
+                        });
+                        
+                        // Trigger reflow
+                        tables.forEach(table => {
+                            table.style.display = 'none';
+                            table.offsetHeight; // Force reflow
+                            table.style.display = '';
+                        });
+                    });
+
+                    // Preserve and redraw table content
+                    requestAnimationFrame(() => {
+                        const tables = document.querySelectorAll('.users-table');
+                        tables.forEach(table => {
+                            // Cache the table content
+                            const content = table.innerHTML;
+                            
+                            // Force reflow while preserving content
+                            table.style.opacity = '0';
+                            table.innerHTML = content;
+                            table.offsetHeight;
+                            table.style.opacity = '1';
+                            
+                            // Ensure all cells are visible
+                            table.querySelectorAll('td').forEach(cell => {
+                                cell.style.visibility = 'visible';
+                                cell.style.display = '';
+                            });
+                        });
+                    });
+
                     // Show notification unless it's the initial load
                     if (!isInitial) {
-                        showNotification(
+                        notifications.showSuccess(
                             'Theme Updated',
-                            `Switched to ${isDark ? 'dark' : 'light'} mode`,
-                            'success'
+                            `Switched to ${isDark ? 'dark' : 'light'} mode`
                         );
                     }
 
@@ -4858,14 +5796,23 @@ window.addEventListener('load', function() {
                 ThemeManager.toggle();
             }
 
-            // Initialize theme from localStorage
-            document.addEventListener('DOMContentLoaded', function() {
-                // Get saved theme or system preference
-                const savedTheme = localStorage.getItem('theme') || 
-                                 (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                const themeIcon = document.getElementById('themeIcon');
-                
-                if (savedTheme === 'dark') {
+        // Initialize table and theme
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure table is visible on load
+            const tables = document.querySelectorAll('.users-table');
+            tables.forEach(table => {
+                table.style.visibility = 'visible';
+                table.style.display = 'table';
+                table.querySelectorAll('th, td').forEach(cell => {
+                    cell.style.visibility = 'visible';
+                    cell.style.display = 'table-cell';
+                });
+            });
+
+            // Get saved theme or system preference
+            const savedTheme = localStorage.getItem('theme') || 
+                             (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const themeIcon = document.getElementById('themeIcon');                if (savedTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
                     themeIcon.className = 'fas fa-sun';
                     document.body.style.backgroundColor = 'var(--background-primary)';
@@ -4959,7 +5906,7 @@ window.addEventListener('load', function() {
                 const formData = new FormData();
                 
                 // Show loading notification
-                showNotification('Info', 'Saving settings...', 'info');
+                notifications.showSuccess('Info', 'Saving settings...');
 
                 // Add file uploads
                 const logoFile = document.getElementById('logoUpload').files[0];
@@ -5019,13 +5966,13 @@ window.addEventListener('load', function() {
                 })
                 .then(data => {
                     if (data.success) {
-                        showNotification('Success', 'Landing page settings saved successfully', 'success');
+                        notifications.showSuccess('Success', 'Landing page settings saved successfully');
                     } else {
                         throw new Error(data.message || 'Failed to save settings');
                     }
                 })
                 .catch(error => {
-                    showNotification('Error', error.message || 'Failed to save settings', 'error');
+                    notifications.showError('Error', error.message || 'Failed to save settings');
                     console.error('Error:', error);
                 });
                 
@@ -5093,7 +6040,7 @@ window.addEventListener('load', function() {
                     })
                     .catch(error => {
                         console.error('Error loading settings:', error);
-                        showNotification('Error', 'Failed to load settings', 'error');
+                        notifications.showError('Error', 'Failed to load settings');
                     });
             }
 
