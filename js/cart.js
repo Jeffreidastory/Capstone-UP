@@ -1,24 +1,40 @@
 class Cart {
     constructor() {
         this.items = [];
+        
+        // Always start with empty selection
+        sessionStorage.setItem('selectedItems', '[]');
+        
         this.loadFromSession();
-        
-        // Initialize selected items with all cart items by default
-        if (!sessionStorage.getItem('selectedItems')) {
-            const selectedItems = this.items.map(item => item.id);
-            sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
-        }
-        
         this.setupEventListeners();
     }
 
     loadFromSession() {
         const savedCart = sessionStorage.getItem('cart');
+        const checkoutItems = sessionStorage.getItem('checkoutItems');
+        
         if (savedCart) {
-            this.items = JSON.parse(savedCart);
-            this.updateCartCount();
-            this.updateCartDisplay();
+            let cartItems = JSON.parse(savedCart);
+            
+            // If there are items that were just ordered, remove them from cart
+            if (checkoutItems) {
+                const orderedItems = JSON.parse(checkoutItems);
+                cartItems = cartItems.filter(cartItem => 
+                    !orderedItems.some(ordered => ordered.id === cartItem.id)
+                );
+            }
+            
+            this.items = cartItems;
+            // Save the filtered cart back to storage
+            this.saveToSession();
+            // Clear checkout data
+            sessionStorage.removeItem('checkoutItems');
+        } else {
+            this.items = [];
         }
+        
+        this.updateCartCount();
+        this.updateCartDisplay();
     }
 
     saveToSession() {
@@ -68,6 +84,7 @@ class Cart {
             existingItem.quantity = totalQuantity;
         } else {
             this.items.push({ id, name, price, image, quantity });
+            // Keep existing selections, don't select new item
         }
         
         this.saveToSession();
@@ -142,7 +159,7 @@ class Cart {
 
         if (this.items.length === 0) {
             cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
-            if (subtotalElement) subtotalElement.innerHTML = '0.00';
+            if (subtotalElement) subtotalElement.innerHTML = '';
             if (totalElement) totalElement.textContent = '0.00';
             if (checkoutBtn) checkoutBtn.disabled = true;
             return;
@@ -171,10 +188,17 @@ class Cart {
             </div>
         `).join('');
 
-            // Calculate and display subtotal
+        // Calculate and display subtotal
         if (subtotalElement) {
+            let breakdownHTML = '<div class="cart-breakdown">';
             let total = 0;
-            let breakdownHTML = '';
+
+            // Add "Subtotal:" header
+            breakdownHTML += `
+                <div class="breakdown-header">
+                    <span class="subtotal-label">Subtotal:</span>
+                </div>
+            `;
 
             // Add selected items to breakdown
             this.items.forEach(item => {
@@ -182,31 +206,33 @@ class Cart {
                     const itemTotal = item.price * item.quantity;
                     total += itemTotal;
                     breakdownHTML += `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>${item.name} (${item.quantity})</span>
-                            <span>₱${itemTotal.toFixed(2)}</span>
+                        <div class="breakdown-item">
+                            <div class="item-detail">
+                                <span class="item-name">${item.name} (${item.quantity})</span>
+                                <span class="item-dots"></span>
+                                <span class="item-price">₱${itemTotal.toFixed(2)}</span>
+                            </div>
                         </div>
                     `;
                 }
             });
 
-            breakdownHTML = `
-                <div class="subtotal-section">
-                    ${breakdownHTML}
-                    <div style="border-top: 1px solid #dee2e6; margin-top: 10px; padding-top: 10px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                            <span>Total:</span>
-                            <span>₱${total.toFixed(2)}</span>
-                        </div>
-                    </div>
+            // Add total with peso sign in the amount only
+            breakdownHTML += `
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-total">
+                    <span class="total-label">Total</span>
+                    <span class="total-amount">₱${total.toFixed(2)}</span>
                 </div>
-            `;
+            </div>`;
 
             subtotalElement.innerHTML = breakdownHTML;
             if (totalElement) {
-                totalElement.innerHTML = `₱${total.toFixed(2)}`;
+                totalElement.textContent = total.toFixed(2);
             }
-        }        // Update checkout button state
+        }
+
+        // Update checkout button state
         if (checkoutBtn) {
             const hasSelectedItems = selectedItems.length > 0;
             checkoutBtn.disabled = !hasSelectedItems;
@@ -351,30 +377,29 @@ class Cart {
                         }
                         return;
                     }
-
+                    // Filter selected items for checkout
                     const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
-                    if (selectedItems.length === 0) {
-                        this.showNotification('Please select at least one item to checkout', 'error');
-                        return;
-                    }
-
-                    // Get the selected items from cart
                     const selectedCartItems = this.items.filter(item => selectedItems.includes(item.id));
+                    
                     if (selectedCartItems.length === 0) {
                         this.showNotification('Please select at least one item to checkout', 'error');
                         return;
                     }
-
-                    // Save only the selected items for checkout
+                    
+                    // Store selected items for checkout
                     sessionStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
-
-                    // Clear the cart modal
+                    
+                    // Remove selected items from cart immediately
+                    this.items = this.items.filter(item => !selectedItems.includes(item.id));
+                    this.saveToSession();
+                    
+                    // Close cart modal first
                     const cartModal = document.getElementById('cartModal');
                     if (cartModal) {
                         cartModal.style.display = 'none';
                     }
 
-                    // Redirect to checkout page
+                    // Navigate to checkout
                     window.location.href = 'checkout.php';
                 } catch (error) {
                     console.error('Error checking profile:', error);

@@ -26,6 +26,7 @@ $query = "SELECT
             o.method
           FROM orders o 
           WHERE o.user_id = ? 
+          AND o.status != 'completed' 
           ORDER BY o.order_time DESC";
 
 try {

@@ -126,7 +126,7 @@
                             <a href="profile.php" class="profile-link">
                                 <i class="fas fa-user-edit"></i> Edit Profile
                             </a>
-                            <a href="#" class="profile-link">
+                            <a href="order_history.php" class="profile-link">
                                 <i class="fas fa-history"></i> Order History
                             </a>
                             <a href="#" class="profile-link">
@@ -301,14 +301,7 @@
             </div>
             <div id="cartItems" class="cart-items"></div>
             <div class="cart-summary">
-                <div class="summary-row">
-                    <span>Subtotal:</span>
-                    <span class="subtotal">₱<span id="cartSubtotal">0.00</span></span>
-                </div>
-                <div class="summary-row total">
-                    <span>Total:</span>
-                    <span class="total-amount">₱<span id="cartTotal">0.00</span></span>
-                </div>
+                <div id="cartSubtotal"></div>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <button id="checkoutBtn" class="checkout-btn">
                         <i class="fas fa-check"></i> Proceed to Checkout

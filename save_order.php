@@ -10,8 +10,8 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get the raw POST data
-$data = json_decode(file_get_contents('php://input'), true);
+// Get the order data
+$data = isset($_POST['orderData']) ? json_decode($_POST['orderData'], true) : null;
 
 if (!$data || empty($data['items'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid order data']);
@@ -20,11 +20,28 @@ if (!$data || empty($data['items'])) {
 
 // Get user information
 $userId = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT FirstName, LastName, phone, address, verification_status FROM users WHERE Id = ?");
+$stmt = $conn->prepare("SELECT FirstName, LastName, phone, verification_status FROM users WHERE Id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+
+// Get selected delivery address
+if (!isset($data['deliveryAddressId'])) {
+    echo json_encode(['success' => false, 'message' => 'Please select a delivery address']);
+    exit();
+}
+
+$stmtAddr = $conn->prepare("SELECT CONCAT(street_address, ', ', barangay, ', ', city, ', ', province, ' ', zip_code) as full_address FROM delivery_addresses WHERE id = ? AND user_id = ?");
+$stmtAddr->bind_param("ii", $data['deliveryAddressId'], $userId);
+$stmtAddr->execute();
+$addrResult = $stmtAddr->get_result();
+$deliveryAddress = $addrResult->fetch_assoc();
+
+if (!$deliveryAddress) {
+    echo json_encode(['success' => false, 'message' => 'Invalid delivery address']);
+    exit();
+}
 
 // Check if user is verified
 if ($user['verification_status'] !== 'approved') {
@@ -37,8 +54,8 @@ if (!$user) {
     exit();
 }
 
-if (empty($user['address'])) {
-    echo json_encode(['success' => false, 'message' => 'Please complete your delivery address in profile']);
+if (!$deliveryAddress) {
+    echo json_encode(['success' => false, 'message' => 'Please select a valid delivery address']);
     exit();
 }
 
@@ -67,10 +84,14 @@ try {
     }
     $itemNameString = implode("\n", $itemNames);
 
+    // Set initial status based on payment method
+    $status = $data['paymentMethod'] === 'gcash' ? 'awaiting_payment_verification' : 'pending';
+
     // Insert into orders table with user_id, address, payment method, and item names
-    $stmt = $conn->prepare("INSERT INTO orders (user_id, name, address, method, total_products, total_price, status, order_time, item_name) VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)");
+    $stmt = $conn->prepare("INSERT INTO orders (user_id, name, address, method, total_products, total_price, status, order_time, item_name, delivery_instructions) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)");
     $fullName = $user['FirstName'] . ' ' . $user['LastName'];
-    $stmt->bind_param("isssids", $userId, $fullName, $user['address'], $data['paymentMethod'], $totalProducts, $totalPrice, $itemNameString);
+    $deliveryInstructions = isset($data['deliveryInstructions']) ? $data['deliveryInstructions'] : '';
+    $stmt->bind_param("isssidsss", $userId, $fullName, $deliveryAddress['full_address'], $data['paymentMethod'], $totalProducts, $totalPrice, $status, $itemNameString, $deliveryInstructions);
     
     if (!$stmt->execute()) {
         throw new Exception("Failed to create order: " . $stmt->error);
@@ -78,15 +99,50 @@ try {
     
     $orderId = $stmt->insert_id;
 
-    // We don't need to insert individual items since we store totals
-    
+    // Handle GCash payment if selected
+    if ($data['paymentMethod'] === 'gcash') {
+        // Create uploads directory if it doesn't exist
+        $uploadDir = 'uploaded_payments/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        // Handle file upload
+        if (!isset($_FILES['payment_proof'])) {
+            throw new Exception("Payment proof is required for GCash payments");
+        }
+
+        $paymentProof = $_FILES['payment_proof'];
+        $fileExtension = pathinfo($paymentProof['name'], PATHINFO_EXTENSION);
+        $fileName = 'payment_' . $orderId . '_' . time() . '.' . $fileExtension;
+        $targetPath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($paymentProof['tmp_name'], $targetPath)) {
+            throw new Exception("Error uploading payment proof");
+        }
+
+        // Insert payment record
+        $stmtPayment = $conn->prepare("INSERT INTO payment_records (order_id, payment_method, reference_number, payment_proof, payment_status, verification_notes) 
+                                      VALUES (?, 'gcash', ?, ?, 'pending', '')");
+        
+        $refNumber = $_POST['reference_number'];
+        $stmtPayment->bind_param("iss", $orderId, $refNumber, $fileName);
+
+        if (!$stmtPayment->execute()) {
+            throw new Exception("Error creating payment record: " . $stmtPayment->error);
+        }
+    }
+
     // Commit transaction
     $conn->commit();
     
+    // Add ordered items and redirect URL to response
     echo json_encode([
         'success' => true,
         'message' => 'Order placed successfully!',
-        'orderId' => $orderId
+        'orderId' => $orderId,
+        'orderedItems' => $data['items'],
+        'redirectUrl' => 'index.php?order_complete=true'
     ]);
     
 } catch (Exception $e) {

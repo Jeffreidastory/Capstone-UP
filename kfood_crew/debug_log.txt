@@ -217,3 +217,1136 @@ Sinigang (1)
 ----------------------------------------
 [2025-10-01 19:37:50] Successfully completed stock deduction for Order #27
 ----------------------------------------
+[2025-10-06 01:15:49] Successfully completed stock deduction for Order #28
+----------------------------------------
+[2025-10-06 01:15:50] Successfully completed stock deduction for Order #29
+----------------------------------------
+[2025-10-06 01:15:52] Successfully completed stock deduction for Order #30
+----------------------------------------
+[2025-10-06 01:15:52] Successfully completed stock deduction for Order #31
+----------------------------------------
+[2025-10-06 01:15:54] Successfully completed stock deduction for Order #32
+----------------------------------------
+[2025-10-06 01:15:55] Successfully completed stock deduction for Order #33
+----------------------------------------
+[2025-10-06 01:15:56] Successfully completed stock deduction for Order #34
+----------------------------------------
+[2025-10-06 01:15:58] Successfully completed stock deduction for Order #35
+----------------------------------------
+[2025-10-06 01:15:59] Successfully completed stock deduction for Order #36
+----------------------------------------
+[2025-10-06 01:16:01] Successfully completed stock deduction for Order #38
+----------------------------------------
+[2025-10-06 01:16:02] Successfully completed stock deduction for Order #41
+----------------------------------------
+[2025-10-06 01:16:04] Successfully completed stock deduction for Order #40
+----------------------------------------
+[2025-10-06 01:16:05] Successfully completed stock deduction for Order #39
+----------------------------------------
+[2025-10-06 01:16:06] Successfully completed stock deduction for Order #37
+----------------------------------------
+[2025-10-06 01:16:08] Successfully completed stock deduction for Order #42
+----------------------------------------
+[2025-10-06 01:16:09] Successfully completed stock deduction for Order #48
+----------------------------------------
+[2025-10-06 01:16:10] Successfully completed stock deduction for Order #47
+----------------------------------------
+[2025-10-06 01:16:12] Successfully completed stock deduction for Order #46
+----------------------------------------
+[2025-10-06 01:16:13] Successfully completed stock deduction for Order #55
+----------------------------------------
+[2025-10-06 01:16:14] Successfully completed stock deduction for Order #43
+----------------------------------------
+[2025-10-06 01:16:15] Successfully completed stock deduction for Order #52
+----------------------------------------
+[2025-10-06 01:16:17] Successfully completed stock deduction for Order #54
+----------------------------------------
+[2025-10-06 01:16:18] Successfully completed stock deduction for Order #49
+----------------------------------------
+[2025-10-06 01:16:19] Successfully completed stock deduction for Order #53
+----------------------------------------
+[2025-10-06 01:16:21] Successfully completed stock deduction for Order #45
+----------------------------------------
+[2025-10-06 01:16:21] Successfully completed stock deduction for Order #44
+----------------------------------------
+[2025-10-06 01:16:22] Successfully completed stock deduction for Order #50
+----------------------------------------
+[2025-10-06 01:16:22] Successfully completed stock deduction for Order #51
+----------------------------------------
+[2025-10-06 01:16:24] Starting stock deduction for Order #29\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:24] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:24] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 7
+    [quantity_to_deduct] => 1
+    [new_stock] => 6
+)
+
+----------------------------------------
+[2025-10-06 01:16:24] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 7
+    [new_stock] => 6
+)
+
+----------------------------------------
+[2025-10-06 01:16:24] Successfully completed stock deduction for Order #29
+----------------------------------------
+[2025-10-06 01:16:27] Starting stock deduction for Order #28\nData: Array
+(
+    [items] => Crinkles (2)
+    [total_products] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Processing item: Crinkles (2)
+----------------------------------------
+[2025-10-06 01:16:27] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 6
+    [quantity_to_deduct] => 2
+    [new_stock] => 4
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 2
+    [previous_stock] => 6
+    [new_stock] => 4
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Successfully completed stock deduction for Order #28
+----------------------------------------
+[2025-10-06 01:16:27] Starting stock deduction for Order #33\nData: Array
+(
+    [items] => fishda (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Processing item: fishda (1)
+----------------------------------------
+[2025-10-06 01:16:27] Updating stock for fishda\nData: Array
+(
+    [product_id] => 18
+    [current_stock] => 43
+    [quantity_to_deduct] => 1
+    [new_stock] => 42
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 18
+    [quantity] => 1
+    [previous_stock] => 43
+    [new_stock] => 42
+)
+
+----------------------------------------
+[2025-10-06 01:16:27] Successfully completed stock deduction for Order #33
+----------------------------------------
+[2025-10-06 01:16:28] Starting stock deduction for Order #34\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:28] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:28] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 4
+    [quantity_to_deduct] => 1
+    [new_stock] => 3
+)
+
+----------------------------------------
+[2025-10-06 01:16:28] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 4
+    [new_stock] => 3
+)
+
+----------------------------------------
+[2025-10-06 01:16:28] Successfully completed stock deduction for Order #34
+----------------------------------------
+[2025-10-06 01:16:29] Starting stock deduction for Order #32\nData: Array
+(
+    [items] => Lasagna (1)
+Pastilan (1)
+    [total_products] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:29] Processing item: Lasagna (1)
+----------------------------------------
+[2025-10-06 01:16:29] Updating stock for Lasagna\nData: Array
+(
+    [product_id] => 13
+    [current_stock] => 48
+    [quantity_to_deduct] => 1
+    [new_stock] => 47
+)
+
+----------------------------------------
+[2025-10-06 01:16:29] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 13
+    [quantity] => 1
+    [previous_stock] => 48
+    [new_stock] => 47
+)
+
+----------------------------------------
+[2025-10-06 01:16:29] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:16:29] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 43
+    [quantity_to_deduct] => 1
+    [new_stock] => 42
+)
+
+----------------------------------------
+[2025-10-06 01:16:29] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 43
+    [new_stock] => 42
+)
+
+----------------------------------------
+[2025-10-06 01:16:29] Successfully completed stock deduction for Order #32
+----------------------------------------
+[2025-10-06 01:16:30] Starting stock deduction for Order #30\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:30] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 3
+    [quantity_to_deduct] => 1
+    [new_stock] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 3
+    [new_stock] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Successfully completed stock deduction for Order #30
+----------------------------------------
+[2025-10-06 01:16:30] Starting stock deduction for Order #31\nData: Array
+(
+    [items] => Crinkles (1)
+Pastilan (1)
+    [total_products] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:30] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 2
+    [quantity_to_deduct] => 1
+    [new_stock] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 2
+    [new_stock] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:16:30] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 42
+    [quantity_to_deduct] => 1
+    [new_stock] => 41
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 42
+    [new_stock] => 41
+)
+
+----------------------------------------
+[2025-10-06 01:16:30] Successfully completed stock deduction for Order #31
+----------------------------------------
+[2025-10-06 01:16:32] Starting stock deduction for Order #41\nData: Array
+(
+    [items] => Lasagna (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Processing item: Lasagna (1)
+----------------------------------------
+[2025-10-06 01:16:32] Updating stock for Lasagna\nData: Array
+(
+    [product_id] => 13
+    [current_stock] => 47
+    [quantity_to_deduct] => 1
+    [new_stock] => 46
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 13
+    [quantity] => 1
+    [previous_stock] => 47
+    [new_stock] => 46
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Successfully completed stock deduction for Order #41
+----------------------------------------
+[2025-10-06 01:16:32] Starting stock deduction for Order #40\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:16:32] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 41
+    [quantity_to_deduct] => 1
+    [new_stock] => 40
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 41
+    [new_stock] => 40
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Successfully completed stock deduction for Order #40
+----------------------------------------
+[2025-10-06 01:16:32] Starting stock deduction for Order #39\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:32] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 1
+    [quantity_to_deduct] => 1
+    [new_stock] => 0
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 1
+    [new_stock] => 0
+)
+
+----------------------------------------
+[2025-10-06 01:16:32] Successfully completed stock deduction for Order #39
+----------------------------------------
+[2025-10-06 01:16:33] Starting stock deduction for Order #38\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:33] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:33] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 38
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:33] Starting stock deduction for Order #37\nData: Array
+(
+    [items] => fishda (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:33] Processing item: fishda (1)
+----------------------------------------
+[2025-10-06 01:16:33] Updating stock for fishda\nData: Array
+(
+    [product_id] => 18
+    [current_stock] => 42
+    [quantity_to_deduct] => 1
+    [new_stock] => 41
+)
+
+----------------------------------------
+[2025-10-06 01:16:33] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 18
+    [quantity] => 1
+    [previous_stock] => 42
+    [new_stock] => 41
+)
+
+----------------------------------------
+[2025-10-06 01:16:33] Successfully completed stock deduction for Order #37
+----------------------------------------
+[2025-10-06 01:16:34] Starting stock deduction for Order #36\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:34] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:34] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 36
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:34] Starting stock deduction for Order #35\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:34] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:34] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 35
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:35] Starting stock deduction for Order #36\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:35] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:35] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 36
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:46] Starting stock deduction for Order #38\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:46] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:46] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 38
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:47] Starting stock deduction for Order #36\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:47] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:47] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 36
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:48] Starting stock deduction for Order #35\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:48] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:48] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 35
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:48] Starting stock deduction for Order #42\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:48] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:49] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 42
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:49] Starting stock deduction for Order #43\nData: Array
+(
+    [items] => Atchara (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:49] Processing item: Atchara (1)
+----------------------------------------
+[2025-10-06 01:16:49] Updating stock for Atchara\nData: Array
+(
+    [product_id] => 22
+    [current_stock] => 32
+    [quantity_to_deduct] => 1
+    [new_stock] => 31
+)
+
+----------------------------------------
+[2025-10-06 01:16:49] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 22
+    [quantity] => 1
+    [previous_stock] => 32
+    [new_stock] => 31
+)
+
+----------------------------------------
+[2025-10-06 01:16:49] Successfully completed stock deduction for Order #43
+----------------------------------------
+[2025-10-06 01:16:50] Starting stock deduction for Order #44\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:50] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:16:50] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 44
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:16:51] Starting stock deduction for Order #45\nData: Array
+(
+    [items] => fishda (2)
+    [total_products] => 2
+)
+
+----------------------------------------
+[2025-10-06 01:16:51] Processing item: fishda (2)
+----------------------------------------
+[2025-10-06 01:16:51] Updating stock for fishda\nData: Array
+(
+    [product_id] => 18
+    [current_stock] => 41
+    [quantity_to_deduct] => 2
+    [new_stock] => 39
+)
+
+----------------------------------------
+[2025-10-06 01:16:51] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 18
+    [quantity] => 2
+    [previous_stock] => 41
+    [new_stock] => 39
+)
+
+----------------------------------------
+[2025-10-06 01:16:51] Successfully completed stock deduction for Order #45
+----------------------------------------
+[2025-10-06 01:16:57] Starting stock deduction for Order #48\nData: Array
+(
+    [items] => Lasagna (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Processing item: Lasagna (1)
+----------------------------------------
+[2025-10-06 01:16:57] Updating stock for Lasagna\nData: Array
+(
+    [product_id] => 13
+    [current_stock] => 46
+    [quantity_to_deduct] => 1
+    [new_stock] => 45
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 13
+    [quantity] => 1
+    [previous_stock] => 46
+    [new_stock] => 45
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Successfully completed stock deduction for Order #48
+----------------------------------------
+[2025-10-06 01:16:57] Starting stock deduction for Order #47\nData: Array
+(
+    [items] => Manga (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Processing item: Manga (1)
+----------------------------------------
+[2025-10-06 01:16:57] Updating stock for Manga\nData: Array
+(
+    [product_id] => 21
+    [current_stock] => 46
+    [quantity_to_deduct] => 1
+    [new_stock] => 45
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 21
+    [quantity] => 1
+    [previous_stock] => 46
+    [new_stock] => 45
+)
+
+----------------------------------------
+[2025-10-06 01:16:57] Successfully completed stock deduction for Order #47
+----------------------------------------
+[2025-10-06 01:16:58] Starting stock deduction for Order #46\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:16:58] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:16:58] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 40
+    [quantity_to_deduct] => 1
+    [new_stock] => 39
+)
+
+----------------------------------------
+[2025-10-06 01:16:58] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 40
+    [new_stock] => 39
+)
+
+----------------------------------------
+[2025-10-06 01:16:58] Successfully completed stock deduction for Order #46
+----------------------------------------
+[2025-10-06 01:17:00] Starting stock deduction for Order #35\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:17:00] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:17:00] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 35
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:17:01] Starting stock deduction for Order #36\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:17:01] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:17:01] ERROR: Insufficient stock for Crinkles (needed: 1, available: 0)\nData: Array
+(
+    [order_id] => 36
+    [status] => out for delivery
+    [trace] => #0 {main}
+)
+
+----------------------------------------
+[2025-10-06 01:18:37] Starting stock deduction for Order #38\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:37] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:37] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 24
+    [quantity_to_deduct] => 1
+    [new_stock] => 23
+)
+
+----------------------------------------
+[2025-10-06 01:18:37] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 24
+    [new_stock] => 23
+)
+
+----------------------------------------
+[2025-10-06 01:18:37] Successfully completed stock deduction for Order #38
+----------------------------------------
+[2025-10-06 01:18:38] Starting stock deduction for Order #36\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:38] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 23
+    [quantity_to_deduct] => 1
+    [new_stock] => 22
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 23
+    [new_stock] => 22
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Successfully completed stock deduction for Order #36
+----------------------------------------
+[2025-10-06 01:18:38] Starting stock deduction for Order #35\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:38] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 22
+    [quantity_to_deduct] => 1
+    [new_stock] => 21
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 22
+    [new_stock] => 21
+)
+
+----------------------------------------
+[2025-10-06 01:18:38] Successfully completed stock deduction for Order #35
+----------------------------------------
+[2025-10-06 01:18:39] Starting stock deduction for Order #42\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:39] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:39] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 21
+    [quantity_to_deduct] => 1
+    [new_stock] => 20
+)
+
+----------------------------------------
+[2025-10-06 01:18:39] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 21
+    [new_stock] => 20
+)
+
+----------------------------------------
+[2025-10-06 01:18:39] Successfully completed stock deduction for Order #42
+----------------------------------------
+[2025-10-06 01:18:40] Starting stock deduction for Order #44\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:40] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:40] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 20
+    [quantity_to_deduct] => 1
+    [new_stock] => 19
+)
+
+----------------------------------------
+[2025-10-06 01:18:40] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 20
+    [new_stock] => 19
+)
+
+----------------------------------------
+[2025-10-06 01:18:40] Successfully completed stock deduction for Order #44
+----------------------------------------
+[2025-10-06 01:18:42] Starting stock deduction for Order #50\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:42] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 19
+    [quantity_to_deduct] => 1
+    [new_stock] => 18
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 19
+    [new_stock] => 18
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Successfully completed stock deduction for Order #50
+----------------------------------------
+[2025-10-06 01:18:42] Starting stock deduction for Order #49\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:18:42] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 39
+    [quantity_to_deduct] => 1
+    [new_stock] => 38
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 39
+    [new_stock] => 38
+)
+
+----------------------------------------
+[2025-10-06 01:18:42] Successfully completed stock deduction for Order #49
+----------------------------------------
+[2025-10-06 01:18:43] Starting stock deduction for Order #53\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:43] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:18:43] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 38
+    [quantity_to_deduct] => 1
+    [new_stock] => 37
+)
+
+----------------------------------------
+[2025-10-06 01:18:43] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 38
+    [new_stock] => 37
+)
+
+----------------------------------------
+[2025-10-06 01:18:43] Successfully completed stock deduction for Order #53
+----------------------------------------
+[2025-10-06 01:18:46] Starting stock deduction for Order #51\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:46] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:18:46] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 37
+    [quantity_to_deduct] => 1
+    [new_stock] => 36
+)
+
+----------------------------------------
+[2025-10-06 01:18:46] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 37
+    [new_stock] => 36
+)
+
+----------------------------------------
+[2025-10-06 01:18:46] Successfully completed stock deduction for Order #51
+----------------------------------------
+[2025-10-06 01:18:47] Starting stock deduction for Order #55\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-06 01:18:47] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 36
+    [quantity_to_deduct] => 1
+    [new_stock] => 35
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 36
+    [new_stock] => 35
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Successfully completed stock deduction for Order #55
+----------------------------------------
+[2025-10-06 01:18:47] Starting stock deduction for Order #54\nData: Array
+(
+    [items] => Crinkles (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-06 01:18:47] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 18
+    [quantity_to_deduct] => 1
+    [new_stock] => 17
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 18
+    [new_stock] => 17
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Successfully completed stock deduction for Order #54
+----------------------------------------
+[2025-10-06 01:18:47] Starting stock deduction for Order #52\nData: Array
+(
+    [items] => fishda (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Processing item: fishda (1)
+----------------------------------------
+[2025-10-06 01:18:47] Updating stock for fishda\nData: Array
+(
+    [product_id] => 18
+    [current_stock] => 39
+    [quantity_to_deduct] => 1
+    [new_stock] => 38
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 18
+    [quantity] => 1
+    [previous_stock] => 39
+    [new_stock] => 38
+)
+
+----------------------------------------
+[2025-10-06 01:18:47] Successfully completed stock deduction for Order #52
+----------------------------------------
+[2025-10-06 17:53:46] Successfully completed stock deduction for Order #58
+----------------------------------------
+[2025-10-06 17:53:52] Successfully completed stock deduction for Order #57
+----------------------------------------
+[2025-10-06 17:53:57] Successfully completed stock deduction for Order #59
+----------------------------------------
