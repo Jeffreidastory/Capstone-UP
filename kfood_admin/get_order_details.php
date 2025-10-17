@@ -9,7 +9,10 @@ if (!isset($_GET['id'])) {
 $orderId = (int)$_GET['id'];
 
 $stmt = $conn->prepare("
-    SELECT o.*, u.profile_picture 
+    SELECT 
+        o.*,
+        u.profile_picture,
+        o.delivery_instructions
     FROM orders o 
     LEFT JOIN users u ON u.FirstName || ' ' || u.LastName = o.name 
     WHERE o.id = ?

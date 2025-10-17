@@ -1,0 +1,436 @@
+// Global variable to store current order ID
+let currentOrderId = null;
+
+
+
+// Function to show notifications// Function to show notifications
+
+function showNotification(title, message, type = 'info') {function showNotification(title, message, type = 'info') {
+
+    const notification = document.createElement('div');    const notification = document.createElement('div');
+
+    notification.className = `notification notification-${type}`;    notification.className = `notification notification-${type}`;
+
+    notification.innerHTML = `    
+
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>    notification.innerHTML = `
+
+        <div>        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+
+            <strong>${title}</strong>        <div class="notification-content">
+
+            <p>${message}</p>            <strong>${title}</strong>
+
+        </div>            <p>${message}</p>
+
+    `;        </div>
+
+        `;
+
+    document.body.appendChild(notification);    
+
+    setTimeout(() => notification.classList.add('show'), 10);    document.body.appendChild(notification);
+
+        setTimeout(() => notification.classList.add('show'), 10);
+
+    setTimeout(() => {    
+
+        notification.classList.remove('show');    setTimeout(() => {
+
+        setTimeout(() => notification.remove(), 300);        notification.classList.remove('show');
+
+    }, 3000);        setTimeout(() => notification.remove(), 300);
+
+}    }, 3000);
+
+}
+
+// Function to show payment verification modal
+
+function showPaymentVerification(orderId) {// Function to show payment verification modal
+
+    currentOrderId = orderId;function showPaymentVerification(orderId) {
+
+    const modal = document.getElementById('paymentVerificationModal');    currentOrderId = orderId;
+
+        const modal = document.getElementById('paymentVerificationModal');
+
+    // Show loading cursor    
+
+    document.body.style.cursor = 'wait';    // Show loading cursor
+
+        document.body.style.cursor = 'wait';
+
+    console.log('Fetching payment details for order:', orderId);    
+
+        // Debug logging
+
+    fetch('get_payment_details.php?order_id=' + orderId)    console.log('Fetching payment details for order:', orderId);
+
+        .then(response => {    
+
+            console.log('Response status:', response.status);    // Fetch payment details
+
+            return response.json();    fetch(`get_payment_details.php?order_id=${orderId}`)
+
+        })        .then(response => {
+
+        .then(data => {            console.log('Response status:', response.status);
+
+            console.log('Response data:', data);            return response.json().then(data => {
+
+            if (!data.success) {                console.log('Response data:', data);
+
+                throw new Error(data.message || 'Failed to load payment details');                return {response, data};
+
+            }            });
+
+                    })
+
+            document.getElementById('orderId').textContent = '#' + String(orderId).padStart(5, '0');        .then(({response, data}) => {
+
+            document.getElementById('refNumber').textContent = data.reference_number;            if (!response.ok) {
+
+            document.getElementById('totalAmount').textContent = '₱' + parseFloat(data.total_amount || 0).toFixed(2);                throw new Error(`HTTP error! status: ${response.status}`);
+
+                        }
+
+            const img = document.getElementById('paymentScreenshot');            if (!data.success) {
+
+            img.onerror = () => {                throw new Error(data.message || 'Failed to load payment details');
+
+                console.error('Failed to load image:', data.screenshot_url);            }
+
+                img.src = '../images/error-image.png';            
+
+                showNotification('Warning', 'Failed to load payment screenshot', 'warning');            console.log('Setting modal data');
+
+            };            document.getElementById('orderId').textContent = `#${String(orderId).padStart(5, '0')}`;
+
+            img.src = data.screenshot_url;            document.getElementById('refNumber').textContent = data.reference_number;
+
+                        document.getElementById('totalAmount').textContent = `₱${parseFloat(data.total_amount || 0).toFixed(2)}`;
+
+            modal.style.display = 'block';            
+
+        })            // Set image source and add error handler
+
+        .catch(error => {            const img = document.getElementById('paymentScreenshot');
+
+            console.error('Error:', error);            img.onerror = () => {
+
+            showNotification('Error', 'Failed to load payment details: ' + error.message, 'error');                console.error('Failed to load image:', data.screenshot_url);
+
+        })                img.src = '../images/error-image.png';
+
+        .finally(() => {                showNotification('Warning', 'Failed to load payment screenshot', 'warning');
+
+            document.body.style.cursor = 'default';            };
+
+        });            img.src = data.screenshot_url;
+
+}            
+
+            // Show the modal
+
+// Function to handle payment verification            modal.style.display = 'block';
+
+function handlePayment(action) {        })
+
+    if (!currentOrderId) {        .catch(error => {
+
+        showNotification('Error', 'No order selected', 'error');            console.error('Error:', error);
+
+        return;            showNotification('Error', 'Failed to load payment details: ' + error.message, 'error');
+
+    }        })
+
+        .finally(() => {
+
+    console.log('Handling payment verification:', action, 'for order:', currentOrderId);            document.body.style.cursor = 'default';
+
+        });
+
+    const verifyBtn = document.getElementById('verifyPaymentBtn');}
+
+    const rejectBtn = document.getElementById('rejectPaymentBtn');
+
+    const modal = document.getElementById('paymentVerificationModal');// Function to update order status
+
+    function updateStatus(orderId, newStatus) {
+
+    verifyBtn.disabled = true;    // Show loading indicator
+
+    rejectBtn.disabled = true;    const button = event.target.closest('button');
+
+    document.body.style.cursor = 'wait';    const originalText = button.innerHTML;
+
+    button.disabled = true;
+
+    fetch('verify_and_prepare.php', {    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Updating...`;
+
+        method: 'POST',
+
+        headers: {    fetch('update_order_status.php', {
+
+            'Content-Type': 'application/json',        method: 'POST',
+
+        },        headers: {
+
+        body: JSON.stringify({            'Content-Type': 'application/json',
+
+            order_id: currentOrderId,        },
+
+            status: action        body: JSON.stringify({
+
+        })            order_id: orderId,
+
+    })            status: newStatus
+
+    .then(response => response.json())        })
+
+    .then(data => {    })
+
+        if (data.success) {    .then(response => response.json())
+
+            showNotification(    .then(data => {
+
+                'Success',         if (data.success) {
+
+                action === 'verified' ?             showNotification('Success', `Order status updated to ${newStatus}`, 'success');
+
+                    'Payment verified successfully! Order is now being prepared.' :             setTimeout(() => location.reload(), 1000);
+
+                    'Payment rejected successfully.',        } else {
+
+                'success'            throw new Error(data.message || 'Failed to update order status');
+
+            );        }
+
+                })
+
+            modal.style.display = 'none';    .catch(error => {
+
+            setTimeout(() => location.reload(), 1000);        console.error('Error:', error);
+
+        } else {        showNotification('Error', error.message, 'error');
+
+            throw new Error(data.message || 'Failed to process payment');        button.disabled = false;
+
+        }        button.innerHTML = originalText;
+
+    })    });
+
+    .catch(error => {}
+
+        console.error('Error:', error);
+
+        showNotification('Error', error.message, 'error');// Function to handle payment verification
+
+        verifyBtn.disabled = false;function handlePayment(action) {
+
+        rejectBtn.disabled = false;    if (!currentOrderId) {
+
+    })        showNotification('Error', 'No order selected', 'error');
+
+    .finally(() => {        return;
+
+        document.body.style.cursor = 'default';    }
+
+    });
+
+}    console.log('Handling payment verification:', action, 'for order:', currentOrderId);
+
+
+
+// Function to update order status    // Get and disable buttons
+
+function updateStatus(orderId, newStatus) {    const verifyBtn = document.getElementById('verifyPaymentBtn');
+
+    const button = event.target.closest('button');    const rejectBtn = document.getElementById('rejectPaymentBtn');
+
+    const originalText = button.innerHTML;    const modal = document.getElementById('paymentVerificationModal');
+
+    button.disabled = true;    
+
+    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Updating...`;    // Show loading state
+
+    verifyBtn.disabled = true;
+
+    fetch('update_order_status.php', {    rejectBtn.disabled = true;
+
+        method: 'POST',    document.body.style.cursor = 'wait';
+
+        headers: {
+
+            'Content-Type': 'application/json',    // Verify payment
+
+        },    fetch('verify_and_prepare.php', {
+
+        body: JSON.stringify({        method: 'POST',
+
+            order_id: orderId,        headers: {
+
+            status: newStatus            'Content-Type': 'application/json',
+
+        })        },
+
+    })        body: JSON.stringify({
+
+    .then(response => response.json())            order_id: currentOrderId,
+
+    .then(data => {            status: action
+
+        if (data.success) {        })
+
+            showNotification('Success', `Order status updated to ${newStatus}`, 'success');    })
+
+            setTimeout(() => location.reload(), 1000);    .then(response => response.json())
+
+        } else {    .then(data => {
+
+            throw new Error(data.message || 'Failed to update order status');        if (data.success) {
+
+        }            // Payment verified successfully
+
+    })            showNotification('Success', 
+
+    .catch(error => {                action === 'verified' ? 
+
+        console.error('Error:', error);                    'Payment verified successfully! Order is now being prepared.' : 
+
+        showNotification('Error', error.message, 'error');                    'Payment rejected successfully.',
+
+        button.disabled = false;                'success'
+
+        button.innerHTML = originalText;            );
+
+    });            
+
+}            // Reload the page after a short delay
+
+            setTimeout(() => {
+
+// Set up event listeners                location.reload();
+
+document.addEventListener('DOMContentLoaded', () => {            }, 1000);
+
+    console.log('Setting up event handlers');        } else {
+
+                throw new Error(data.message || 'Failed to process payment');
+
+    // Close modal when clicking the close button or outside        }
+
+    document.querySelectorAll('.close, .close-modal').forEach(element => {    })
+
+        element.addEventListener('click', () => {    .catch(error => {
+
+            document.getElementById('paymentVerificationModal').style.display = 'none';        console.error('Error:', error);
+
+        });        showNotification('Error', error.message, 'error');
+
+    });        
+
+        // Reset UI
+
+    // Set up verify and reject button handlers        verifyBtn.disabled = false;
+
+    const verifyBtn = document.getElementById('verifyPaymentBtn');        rejectBtn.disabled = false;
+
+    const rejectBtn = document.getElementById('rejectPaymentBtn');    })
+
+    .finally(() => {
+
+    console.log('Found buttons:', { verifyBtn, rejectBtn });        document.body.style.cursor = 'default';
+
+    });
+
+    if (verifyBtn) {}
+
+        console.log('Setting up verify button handler');
+
+        verifyBtn.addEventListener('click', () => {// Set up event listeners
+
+            console.log('Verify button clicked');document.addEventListener('DOMContentLoaded', () => {
+
+            handlePayment('verified');    console.log('Setting up event handlers');
+
+        });    
+
+    }    // Close modal when clicking the close button or outside
+
+    document.querySelectorAll('.close, .close-modal').forEach(element => {
+
+    if (rejectBtn) {        element.addEventListener('click', () => {
+
+        console.log('Setting up reject button handler');            document.getElementById('paymentVerificationModal').style.display = 'none';
+
+        rejectBtn.addEventListener('click', () => {        });
+
+            console.log('Reject button clicked');    });
+
+            if (confirm('Are you sure you want to reject this payment?')) {
+
+                handlePayment('rejected');    // Set up verify and reject button handlers
+
+            }    const verifyBtn = document.getElementById('verifyPaymentBtn');
+
+        });    const rejectBtn = document.getElementById('rejectPaymentBtn');
+
+    }
+
+});    console.log('Found buttons:', { verifyBtn, rejectBtn });
+
+    if (verifyBtn) {
+        console.log('Setting up verify button handler');
+        verifyBtn.addEventListener('click', () => {
+            console.log('Verify button clicked');
+            handlePayment('verified');
+        });
+    }
+
+    if (rejectBtn) {
+        console.log('Setting up reject button handler');
+        rejectBtn.addEventListener('click', () => {
+            console.log('Reject button clicked');
+            if (confirm('Are you sure you want to reject this payment?')) {
+                handlePayment('rejected');
+            }
+        });
+    }
+});
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('orderId').textContent = `#${String(orderId).padStart(5, '0')}`;
+                document.getElementById('refNumber').textContent = data.reference_number;
+                document.getElementById('totalAmount').textContent = 
+                    `₱${parseFloat(data.total_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+                
+                // Handle image loading
+                const img = document.getElementById('paymentScreenshot');
+                img.onerror = () => {
+                    img.src = '../images/error-image.png';
+                    showNotification('Warning', 'Failed to load payment screenshot', 'warning');
+                };
+                img.src = data.screenshot_url;
+            } else {
+                throw new Error(data.message || 'Failed to load payment details');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error', error.message, 'error');
+            modal.style.display = 'none';
+        });
+}
+
+// Set up event listeners when document is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Close modal when clicking the close button
+    document.querySelectorAll('.close, .close-modal').forEach(element => {
+        element.addEventListener('click', () => {
+            document.getElementById('paymentVerificationModal').style.display = 'none';
+        });
+    });
+});

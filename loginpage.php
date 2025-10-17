@@ -21,26 +21,17 @@ if(isset($_POST["submit"])){
     // Debug information
     error_log("Login attempt - Username: " . $username);
     
-    // First check in super_admin_users table
-    $admin_sql = "SELECT super_admin_id as user_id, username, full_name, password, 1 as role_id FROM super_admin_users WHERE username = ?";
-    $admin_stmt = $conn->prepare($admin_sql);
-    $admin_stmt->bind_param("s", $username);
-    $admin_stmt->execute();
-    $admin_result = $admin_stmt->get_result();
+    // Check in users table for all account types
+    $sql = "SELECT Id as user_id, username, Email, FirstName, LastName, Password, role_id, profile_picture 
+            FROM users 
+            WHERE username = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
     
-    if($admin_result->num_rows > 0) {
-        // Found in super_admin_users table
-        $result = $admin_result;
-        error_log("Found user in super_admin_users table");
-    } else {
-        // Check in regular users table
-        $sql = "SELECT Id as user_id, username, Email, FirstName, LastName, Password, role_id, profile_picture FROM users WHERE username = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        error_log("Found user in users table");
-    }
+    // Log attempt
+    error_log("Checking for customer account");
     
     // Debug database query
     error_log("Query executed - Found rows: " . $result->num_rows);
