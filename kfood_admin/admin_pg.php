@@ -2501,6 +2501,7 @@ if ($_SESSION['role_id'] == 1) {
                     <div id="notificationList">
                         <div class="notification-text">No new notifications</div>
                     </div>
+                    <!-- Ddsdadasdasddas -->
                 </div>
                 <div class="profile-section">
                     <a href="profile.php" class="profile-info" style="text-decoration: none; cursor: pointer;">
