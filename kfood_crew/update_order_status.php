@@ -20,8 +20,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $order_id = $_POST['orderId'] ?? null;
-    $new_status = $_POST['status'] ?? null;
+    // Check if the request is JSON
+    $contentType = isset($_SERVER["CONTENT_TYPE"]) ? trim($_SERVER["CONTENT_TYPE"]) : '';
+    
+    if (stripos($contentType, 'application/json') !== false) {
+        // Handle JSON input
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $order_id = $data['order_id'] ?? null;
+        $new_status = $data['status'] ?? null;
+    } else {
+        // Handle form data
+        $order_id = $_POST['orderId'] ?? null;
+        $new_status = $_POST['status'] ?? null;
+    }
     
     if (!$order_id || !$new_status) {
         echo json_encode(['success' => false, 'message' => 'Missing required parameters']);

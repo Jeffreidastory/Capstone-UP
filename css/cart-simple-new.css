@@ -1,0 +1,130 @@
+.cart-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 15px !important;
+    margin-bottom: 10px !important;
+    border: 1px solid #eee !important;
+    border-radius: 8px !important;
+    background: white !important;
+}
+
+.checkbox-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 15px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.simple-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 24px;
+    width: 24px;
+    z-index: 1;
+    margin: 0;
+}
+
+.checkbox-label {
+    position: relative;
+    height: 24px;
+    width: 24px;
+    background-color: #fff;
+    border: 2px solid #ff6b6b;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.checkbox-label:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.simple-checkbox:checked + .checkbox-label {
+    background-color: #ff6b6b;
+}
+
+.simple-checkbox:checked + .checkbox-label:after {
+    display: block;
+}
+
+.cart-item.selected {
+    background-color: rgba(255, 107, 107, 0.05) !important;
+    border-color: #ff6b6b !important;
+}
+
+.cart-item-image {
+    width: 80px !important;
+    height: 80px !important;
+    object-fit: cover !important;
+    margin-right: 15px !important;
+    border-radius: 8px !important;
+}
+
+.cart-item-details {
+    flex: 1 !important;
+}
+
+.cart-item-details h3 {
+    margin: 0 0 5px 0 !important;
+    font-size: 1.1rem !important;
+    color: #333 !important;
+}
+
+.price {
+    color: #ff6b6b !important;
+    font-weight: bold !important;
+    margin-bottom: 10px !important;
+}
+
+.controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.btn {
+    padding: 5px 10px !important;
+    cursor: pointer !important;
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 4px !important;
+}
+
+.btn:hover {
+    background: #e9ecef !important;
+}
+
+.quantity {
+    min-width: 30px !important;
+    text-align: center !important;
+}
+
+.remove {
+    color: #dc3545 !important;
+    background: none !important;
+    border: none !important;
+    padding: 5px !important;
+    cursor: pointer !important;
+}
+
+.remove:hover {
+    color: #c82333 !important;
+}
+
+/* Make checkbox wrapper clickable */
+.checkbox-wrapper {
+    z-index: 1;
+    position: relative;
+}

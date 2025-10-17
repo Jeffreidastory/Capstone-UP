@@ -2,7 +2,22 @@
     require_once "connect.php";
     require_once "Session.php";
     
-    // Check if user is logged in
+    // Check if user is logged in and is a customer
+    if (isset($_SESSION['user_id']) && $_SESSION['role_id'] != 4) {
+        // If not a customer, redirect to appropriate dashboard
+        switch($_SESSION['role_id']) {
+            case 3: // Crew
+                header("Location: kfood_crew/dashboard.php");
+                exit();
+            case 2: // Admin
+                header("Location: kfood_admin/admin_pg.php");
+                exit();
+            case 1: // Super Admin
+                header("Location: kfood_admin/SA_login.php");
+                exit();
+        }
+    }
+    
     $isLoggedIn = isset($_SESSION['user_id']);
     
     // Check for logout message
@@ -28,6 +43,7 @@
     <link rel="stylesheet" href="css/contact-style.css">
     <link rel="stylesheet" href="css/navbar-modern.css">
     <link rel="stylesheet" href="css/cart.css">
+    <link rel="stylesheet" href="css/cart-simple-new.css">
     <link rel="stylesheet" href="css/orders-modal.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -126,7 +142,7 @@
                             <a href="profile.php" class="profile-link">
                                 <i class="fas fa-user-edit"></i> Edit Profile
                             </a>
-                            <a href="#" class="profile-link">
+                            <a href="order_history.php" class="profile-link">
                                 <i class="fas fa-history"></i> Order History
                             </a>
                             <a href="#" class="profile-link">
@@ -301,14 +317,7 @@
             </div>
             <div id="cartItems" class="cart-items"></div>
             <div class="cart-summary">
-                <div class="summary-row">
-                    <span>Subtotal:</span>
-                    <span class="subtotal">₱<span id="cartSubtotal">0.00</span></span>
-                </div>
-                <div class="summary-row total">
-                    <span>Total:</span>
-                    <span class="total-amount">₱<span id="cartTotal">0.00</span></span>
-                </div>
+                <div id="cartSubtotal"></div>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <button id="checkoutBtn" class="checkout-btn">
                         <i class="fas fa-check"></i> Proceed to Checkout
@@ -421,7 +430,10 @@
     });
     </script>
 
-    <script src="js/cart.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/cartItemTemplate.js"></script>
+    <script src="js/cart-handler-new.js"></script>
     <script src="js/script.js"></script>
     <script src="js/smooth-scroll.js"></script>
     <script src="js/customer_PR.js"></script>

@@ -1,29 +1,76 @@
 class Cart {
     constructor() {
         this.items = [];
-        this.loadFromSession();
-        
-        // Initialize selected items with all cart items by default
         if (!sessionStorage.getItem('selectedItems')) {
-            const selectedItems = this.items.map(item => item.id);
-            sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+            sessionStorage.setItem('selectedItems', '[]');
         }
-        
+        this.loadFromSession();
         this.setupEventListeners();
+    }
+
+    async syncWithServer() {
+        try {
+            const response = await fetch('js/sync_cart.php');
+            const data = await response.json();
+            
+            if (data.success && data.items) {
+                this.items = data.items;
+                this.saveToSession();
+                this.updateCartDisplay();
+            }
+        } catch (error) {
+            console.error('Error syncing cart:', error);
+        }
+    }
+
+    async saveToServer() {
+        try {
+            await fetch('js/sync_cart.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    items: this.items
+                })
+            });
+        } catch (error) {
+            console.error('Error saving cart to server:', error);
+        }
     }
 
     loadFromSession() {
         const savedCart = sessionStorage.getItem('cart');
+        const checkoutItems = sessionStorage.getItem('checkoutItems');
+        
         if (savedCart) {
-            this.items = JSON.parse(savedCart);
-            this.updateCartCount();
-            this.updateCartDisplay();
+            let cartItems = JSON.parse(savedCart);
+            
+            // If there are items that were just ordered, remove them from cart
+            if (checkoutItems) {
+                const orderedItems = JSON.parse(checkoutItems);
+                cartItems = cartItems.filter(cartItem => 
+                    !orderedItems.some(ordered => ordered.id === cartItem.id)
+                );
+            }
+            
+            this.items = cartItems;
+            // Save the filtered cart back to storage
+            this.saveToSession();
+            // Clear checkout data
+            sessionStorage.removeItem('checkoutItems');
+        } else {
+            this.items = [];
         }
+        
+        this.updateCartCount();
+        this.updateCartDisplay();
     }
 
     saveToSession() {
         sessionStorage.setItem('cart', JSON.stringify(this.items));
         this.updateCartCount();
+        this.saveToServer(); // Sync with server whenever cart is updated
     }
 
     async checkStock(id, requestedQuantity = 1) {
@@ -68,6 +115,7 @@ class Cart {
             existingItem.quantity = totalQuantity;
         } else {
             this.items.push({ id, name, price, image, quantity });
+            // Keep existing selections, don't select new item
         }
         
         this.saveToSession();
@@ -140,21 +188,47 @@ class Cart {
 
         if (!cartItems) return;
 
+        // Get currently selected items
+        const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+
         if (this.items.length === 0) {
             cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
-            if (subtotalElement) subtotalElement.innerHTML = '0.00';
+            if (subtotalElement) subtotalElement.innerHTML = '';
             if (totalElement) totalElement.textContent = '0.00';
             if (checkoutBtn) checkoutBtn.disabled = true;
             return;
         }
 
-        // Get selected items
-        const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
-
         // Update cart items display
         cartItems.innerHTML = this.items.map(item => `
             <div class="cart-item" data-id="${item.id}">
-                <input type="checkbox" class="cart-item-checkbox" data-id="${item.id}" ${selectedItems.includes(item.id) ? 'checked' : ''}>
+                <input type="checkbox" 
+                    class="simple-checkbox" 
+                    data-id="${item.id}" 
+                    ${selectedItems.includes(item.id) ? 'checked' : ''}>
+                <img src="uploaded_img/${item.image}" 
+                    alt="${item.name}" 
+                    class="cart-item-image">
+                <div class="cart-item-details">
+                    <h3>${item.name}</h3>
+                    <div class="price">₱${(item.price * item.quantity).toFixed(2)}</div>
+                    <div class="controls">
+                        <button class="btn minus" data-id="${item.id}">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="btn plus" data-id="${item.id}">+</button>
+                        <button class="remove-btn" data-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+            <div class="cart-item" data-id="${item.id}">
+                <input 
+                    type="checkbox" 
+                    class="cart-item-checkbox" 
+                    data-id="${item.id}" 
+                    ${selectedItems.includes(item.id) ? 'checked' : ''}>
                 <img src="uploaded_img/${item.image}" alt="${item.name}" class="cart-item-image">
                 <div class="cart-item-details">
                     <h3>${item.name}</h3>
@@ -171,10 +245,17 @@ class Cart {
             </div>
         `).join('');
 
-            // Calculate and display subtotal
+        // Calculate and display subtotal
         if (subtotalElement) {
+            let breakdownHTML = '<div class="cart-breakdown">';
             let total = 0;
-            let breakdownHTML = '';
+
+            // Add "Subtotal:" header
+            breakdownHTML += `
+                <div class="breakdown-header">
+                    <span class="subtotal-label">Subtotal:</span>
+                </div>
+            `;
 
             // Add selected items to breakdown
             this.items.forEach(item => {
@@ -182,31 +263,33 @@ class Cart {
                     const itemTotal = item.price * item.quantity;
                     total += itemTotal;
                     breakdownHTML += `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>${item.name} (${item.quantity})</span>
-                            <span>₱${itemTotal.toFixed(2)}</span>
+                        <div class="breakdown-item">
+                            <div class="item-detail">
+                                <span class="item-name">${item.name} (${item.quantity})</span>
+                                <span class="item-dots"></span>
+                                <span class="item-price">₱${itemTotal.toFixed(2)}</span>
+                            </div>
                         </div>
                     `;
                 }
             });
 
-            breakdownHTML = `
-                <div class="subtotal-section">
-                    ${breakdownHTML}
-                    <div style="border-top: 1px solid #dee2e6; margin-top: 10px; padding-top: 10px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                            <span>Total:</span>
-                            <span>₱${total.toFixed(2)}</span>
-                        </div>
-                    </div>
+            // Add total with peso sign in the amount only
+            breakdownHTML += `
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-total">
+                    <span class="total-label">Total</span>
+                    <span class="total-amount">₱${total.toFixed(2)}</span>
                 </div>
-            `;
+            </div>`;
 
             subtotalElement.innerHTML = breakdownHTML;
             if (totalElement) {
-                totalElement.innerHTML = `₱${total.toFixed(2)}`;
+                totalElement.textContent = total.toFixed(2);
             }
-        }        // Update checkout button state
+        }
+
+        // Update checkout button state
         if (checkoutBtn) {
             const hasSelectedItems = selectedItems.length > 0;
             checkoutBtn.disabled = !hasSelectedItems;
@@ -251,9 +334,9 @@ class Cart {
     }
 
     setupEventListeners() {
-        // Add to cart buttons
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
+        // Add to cart button event handling
+        document.addEventListener('click', async (e) => {
+            if (e.target.closest('.add-to-cart-btn')) {
                 const productCard = e.target.closest('.product-card');
                 if (productCard) {
                     const id = productCard.dataset.id;
@@ -262,62 +345,102 @@ class Cart {
                     const price = parseFloat(priceText.replace('₱', ''));
                     const image = productCard.querySelector('.product-image img').getAttribute('src').split('/').pop();
                     
-                    this.addItem(id, name, price, image);
+                    await this.addItem(id, name, price, image);
                 }
-            });
+            }
         });
 
-        // Cart modal event delegation
+        // Cart item event handling
         const cartItems = document.getElementById('cartItems');
         if (cartItems) {
-            cartItems.addEventListener('click', (e) => {
-                const id = e.target.closest('[data-id]')?.dataset.id;
-                if (!id) return;
+            cartItems.addEventListener('click', async (e) => {
+                const cartItemElement = e.target.closest('[data-id]');
+                if (!cartItemElement) return;
+                const id = cartItemElement.dataset.id;
 
                 if (e.target.classList.contains('plus')) {
                     const item = this.items.find(item => item.id === id);
-                    if (item) this.updateQuantity(id, item.quantity + 1);
+                    if (item) await this.updateQuantity(id, item.quantity + 1);
                 }
                 else if (e.target.classList.contains('minus')) {
                     const item = this.items.find(item => item.id === id);
-                    if (item && item.quantity > 1) this.updateQuantity(id, item.quantity - 1);
+                    if (item && item.quantity > 1) await this.updateQuantity(id, item.quantity - 1);
                 }
                 else if (e.target.closest('.remove-btn')) {
                     this.removeItem(id);
+                }
+                else if (e.target.classList.contains('cart-item-checkbox')) {
+                    const checkbox = e.target;
+                    const itemId = checkbox.dataset.id;
+                    let selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
+                    
+                    if (checkbox.checked) {
+                        selectedItems.push(itemId);
+                    } else {
+                        selectedItems = selectedItems.filter(id => id !== itemId);
+                    }
+                    
+                    sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+                    
+                    // Update totals
+                    const total = this.calculateSubtotal();
+                    const subtotalElement = document.getElementById('cartSubtotal');
+                    const totalElement = document.getElementById('total');
+                    const checkoutBtn = document.getElementById('checkoutBtn');
+                    
+                    if (totalElement) {
+                        totalElement.textContent = `₱${total.toFixed(2)}`;
+                    }
+                    
+                    if (checkoutBtn) {
+                        checkoutBtn.disabled = selectedItems.length === 0;
+                    }
+                    
+                    // Update breakdown
+                    if (subtotalElement) {
+                        subtotalElement.innerHTML = `
+                            <div class="subtotal-label">Subtotal:</div>
+                            <div class="subtotal-amount">₱${total.toFixed(2)}</div>
+                        `;
+                    }
+                }
                 }
             });
         }
 
         // Cart modal toggle
+        // Simplified cart event handler
         const cartBtn = document.getElementById('cartBtn');
         const cartModal = document.getElementById('cartModal');
         const closeCartBtn = document.getElementById('closeCartBtn');
+        const cartItems = document.getElementById('cartItems');
 
         if (cartBtn && cartModal && closeCartBtn) {
             cartBtn.addEventListener('click', () => {
                 cartModal.style.display = 'block';
-                this.updateCartDisplay();
+                this.renderCart();
             });
 
-            // Add event listener for checkbox changes
-            document.addEventListener('change', (e) => {
+            // Handle cart item events with delegation
+            cartItems.addEventListener('change', (e) => {
                 if (e.target.classList.contains('cart-item-checkbox')) {
                     const itemId = e.target.dataset.id;
-                    const isChecked = e.target.checked;
-                    
-                    // Update selected items in session storage
                     let selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
                     
-                    if (isChecked && !selectedItems.includes(itemId)) {
-                        selectedItems.push(itemId);
-                    } else if (!isChecked) {
+                    if (e.target.checked) {
+                        if (!selectedItems.includes(itemId)) {
+                            selectedItems.push(itemId);
+                        }
+                    } else {
                         selectedItems = selectedItems.filter(id => id !== itemId);
                     }
                     
                     sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
-                    this.updateCartDisplay(); // Update totals when checkbox state changes
+                    this.updateTotal();
                 }
             });
+
+            // Remove the change event listener as we handle checkboxes in click event
 
             closeCartBtn.addEventListener('click', () => {
                 cartModal.style.display = 'none';
@@ -351,30 +474,29 @@ class Cart {
                         }
                         return;
                     }
-
+                    // Filter selected items for checkout
                     const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems') || '[]');
-                    if (selectedItems.length === 0) {
-                        this.showNotification('Please select at least one item to checkout', 'error');
-                        return;
-                    }
-
-                    // Get the selected items from cart
                     const selectedCartItems = this.items.filter(item => selectedItems.includes(item.id));
+                    
                     if (selectedCartItems.length === 0) {
                         this.showNotification('Please select at least one item to checkout', 'error');
                         return;
                     }
-
-                    // Save only the selected items for checkout
+                    
+                    // Store selected items for checkout
                     sessionStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
-
-                    // Clear the cart modal
+                    
+                    // Remove selected items from cart immediately
+                    this.items = this.items.filter(item => !selectedItems.includes(item.id));
+                    this.saveToSession();
+                    
+                    // Close cart modal first
                     const cartModal = document.getElementById('cartModal');
                     if (cartModal) {
                         cartModal.style.display = 'none';
                     }
 
-                    // Redirect to checkout page
+                    // Navigate to checkout
                     window.location.href = 'checkout.php';
                 } catch (error) {
                     console.error('Error checking profile:', error);

@@ -1,0 +1,113 @@
+.checkbox-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-right: 15px;
+    cursor: pointer;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.simple-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkbox-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 24px;
+    width: 24px;
+    background-color: #fff;
+    border: 2px solid #ff6b6b;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.simple-checkbox:checked ~ .checkbox-custom {
+    background-color: #ff6b6b;
+}
+
+.checkbox-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 8px;
+    top: 4px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.simple-checkbox:checked ~ .checkbox-custom:after {
+    display: block;
+}
+
+.checkbox-wrapper:hover .checkbox-custom {
+    border-color: #ff4f4f;
+}
+
+.cart-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 15px !important;
+    margin-bottom: 10px !important;
+    border: 1px solid #eee !important;
+    border-radius: 8px !important;
+    background: white !important;
+}
+
+.cart-item-image {
+    width: 80px !important;
+    height: 80px !important;
+    object-fit: cover !important;
+    margin-right: 15px !important;
+}
+
+.cart-item-details {
+    flex: 1 !important;
+}
+
+.cart-item-details h3 {
+    margin: 0 0 5px 0 !important;
+    font-size: 1.1rem !important;
+}
+
+.price {
+    color: #ff6b6b !important;
+    font-weight: bold !important;
+    margin-bottom: 10px !important;
+}
+
+.controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.btn {
+    padding: 5px 10px !important;
+    cursor: pointer !important;
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 4px !important;
+}
+
+.btn:hover {
+    background: #e9ecef !important;
+}
+
+.remove {
+    color: #dc3545 !important;
+    background: none !important;
+    border: none !important;
+}
+
+.remove:hover {
+    color: #c82333 !important;
+}
