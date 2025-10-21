@@ -198,20 +198,29 @@
             
             <div class="menu-categories">
                 <button class="category-btn active" data-category="all">All</button>
-                <button class="category-btn" data-category="main">Main Dishes</button>
-                <button class="category-btn" data-category="sides">Side Dishes</button>
-                <button class="category-btn" data-category="desserts">Desserts</button>
+                <?php
+                // Fetch unique categories
+                $category_query = "SELECT DISTINCT category_name FROM product_categories ORDER BY id";
+                $category_result = mysqli_query($conn, $category_query);
+                while ($category = mysqli_fetch_assoc($category_result)) {
+                    $cat_name = htmlspecialchars($category['category_name']);
+                    $cat_data = strtolower(str_replace(' ', '-', $category['category_name']));
+                    echo "<button class='category-btn' data-category='{$cat_data}'>{$cat_name}</button>";
+                }
+                ?>
             </div>
-
 
         <div class="products-grid">
             <?php
-            // Fetch products from the database and display them
-            $select_products = mysqli_query($conn, "SELECT * FROM `products`");
+            // Fetch products with their category names
+            $select_products = mysqli_query($conn, "SELECT p.*, pc.category_name 
+                FROM `products` p 
+                LEFT JOIN `product_categories` pc ON p.category_id = pc.id");
             if (mysqli_num_rows($select_products) > 0) {
                 while ($row = mysqli_fetch_assoc($select_products)) {
+                    $category_class = strtolower(str_replace(' ', '-', $row['category_name']));
             ?>
-            <div class="product-card" data-id="<?php echo $row['id']; ?>" data-category="<?php echo isset($row['category']) ? $row['category'] : 'uncategorized'; ?>">
+            <div class="product-card" data-id="<?php echo $row['id']; ?>" data-category="<?php echo $category_class; ?>">
                 <div class="product-image">
                     <img src="uploaded_img/<?php echo $row['image']; ?>" alt="<?php echo htmlspecialchars($row['name']); ?>" />
                     <?php if (isset($row['is_popular']) && $row['is_popular']): ?>
@@ -429,6 +438,87 @@
         }
     });
     </script>
+
+    <script>
+        // Category filtering
+        document.addEventListener('DOMContentLoaded', function() {
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            const productCards = document.querySelectorAll('.product-card');
+
+            categoryButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    categoryButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+
+                    const category = button.getAttribute('data-category');
+
+                    // Show all products if 'all' is selected, otherwise filter by category
+                    productCards.forEach(card => {
+                        if (category === 'all' || card.getAttribute('data-category') === category) {
+                            card.style.display = 'block';
+                            // Add animation class
+                            card.classList.add('fade-in');
+                        } else {
+                            card.style.display = 'none';
+                            card.classList.remove('fade-in');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+    <style>
+        /* Animation for products */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Category button styles */
+        .menu-categories {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn:hover {
+            background: #FF7F50;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .category-btn.active {
+            background: #FF7F50;
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.2);
+        }
+    </style>
 
     <script src="js/notifications.js"></script>
     <script src="js/notifications.js"></script>

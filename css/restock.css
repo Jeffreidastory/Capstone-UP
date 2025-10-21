@@ -1,0 +1,102 @@
+.restocking-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.restock-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .restock-content {
+    background: #2a2d3a;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.restock-content h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+[data-theme="dark"] .restock-content h2 {
+    color: #fff;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+[data-theme="dark"] .form-group label {
+    color: #ccc;
+}
+
+.form-group select,
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group input {
+    background: #32364a;
+    border-color: #444;
+    color: #fff;
+}
+
+.btn-primary {
+    background: #FF7F50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #ff6b3d;
+}
+
+.restock-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #fff;
+}
+
+[data-theme="dark"] .restock-table {
+    background: #2a2d3a;
+}
+
+.restock-table th,
+.restock-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+[data-theme="dark"] .restock-table th,
+[data-theme="dark"] .restock-table td {
+    border-color: #444;
+    color: #fff;
+}
+
+.restock-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+[data-theme="dark"] .restock-table th {
+    background: #32364a;
+}

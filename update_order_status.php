@@ -42,8 +42,14 @@ try {
         throw new Exception("Order must be out for delivery before marking as complete");
     }
 
-    // Update the order status
-    $update_query = "UPDATE orders SET status = ? WHERE id = ? AND user_id = ?";
+    // Update the order status and track delivery time
+    if ($new_status === 'out for delivery') {
+        $update_query = "UPDATE orders SET status = ?, delivery_time = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?";
+    } elseif ($new_status === 'completed') {
+        $update_query = "UPDATE orders SET status = ?, completion_time = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?";
+    } else {
+        $update_query = "UPDATE orders SET status = ? WHERE id = ? AND user_id = ?";
+    }
     $update_stmt = $conn->prepare($update_query);
     $update_stmt->bind_param("sii", $new_status, $order_id, $_SESSION['user_id']);
     

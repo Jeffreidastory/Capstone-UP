@@ -2,6 +2,104 @@
 session_start();
 include "../connect.php";
 
+// Process Add Product Form
+if(isset($_POST['add_product'])) {
+    $product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
+    $markup_value = mysqli_real_escape_string($conn, $_POST['markup_value']);
+    $category_id = mysqli_real_escape_string($conn, $_POST['category']);
+    $unit_measurement = mysqli_real_escape_string($conn, $_POST['unit_measurement']);
+
+    // Get category name
+    $category_query = "SELECT category_name FROM product_categories WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $category_query);
+    mysqli_stmt_bind_param($stmt, "i", $category_id);
+    mysqli_stmt_execute($stmt);
+    $category_result = mysqli_stmt_get_result($stmt);
+    $category_row = mysqli_fetch_assoc($category_result);
+    $category_name = $category_row['category_name'];
+
+    // Handle image upload
+    $image = $_FILES['product_image']['name'];
+    $image_tmp_name = $_FILES['product_image']['tmp_name'];
+    $image_folder = '../uploaded_img/';
+    
+    // Generate unique filename
+    $image_extension = pathinfo($image, PATHINFO_EXTENSION);
+    $unique_image_name = uniqid() . '.' . $image_extension;
+    $image_path = $image_folder . $unique_image_name;
+
+    // Validate image
+    $allowed_extensions = array('jpg', 'jpeg', 'png');
+    if(!in_array(strtolower($image_extension), $allowed_extensions)) {
+        echo "<script>
+            showNotification('Error', 'Invalid image format. Please use JPG, JPEG, or PNG.', 'error');
+        </script>";
+        exit();
+    }
+
+    // Insert product into database
+    $insert_query = "INSERT INTO new_products (product_name, markup_value, category_id, category_name, unit_measurement, image) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
+    
+    try {
+        $stmt = mysqli_prepare($conn, $insert_query);
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . mysqli_error($conn));
+        }
+        
+        if (!mysqli_stmt_bind_param($stmt, "sdisss", $product_name, $markup_value, $category_id, $category_name, $unit_measurement, $unique_image_name)) {
+            throw new Exception("Binding parameters failed: " . mysqli_stmt_error($stmt));
+        }
+        
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Execute failed: " . mysqli_stmt_error($stmt));
+        }
+        
+        move_uploaded_file($image_tmp_name, $image_path);
+        echo "<script>
+            showNotification('Success', 'Product added successfully!', 'success');
+            setTimeout(() => { window.location.href = 'admin_pg.php?section=menu-creation'; }, 1500);
+        </script>";
+    } catch (Exception $e) {
+        echo "<script>
+            showNotification('Error', '" . htmlspecialchars($e->getMessage()) . "', 'error');
+        </script>";
+    }
+}
+
+// Process Add Category
+if(isset($_POST['add_category'])) {
+    $category_name = mysqli_real_escape_string($conn, $_POST['category_name']);
+    
+    // Check if category already exists
+    $check_query = "SELECT id FROM product_categories WHERE category_name = ?";
+    $stmt = mysqli_prepare($conn, $check_query);
+    mysqli_stmt_bind_param($stmt, "s", $category_name);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    
+    if(mysqli_num_rows($result) > 0) {
+        echo "<script>
+            showNotification('Error', 'Category already exists!', 'error');
+        </script>";
+    } else {
+        $insert_query = "INSERT INTO product_categories (category_name) VALUES (?)";
+        $stmt = mysqli_prepare($conn, $insert_query);
+        mysqli_stmt_bind_param($stmt, "s", $category_name);
+        
+        if(mysqli_stmt_execute($stmt)) {
+            echo "<script>
+                showNotification('Success', 'Category added successfully!', 'success');
+                setTimeout(() => { window.location.href = 'admin_pg.php?section=menu-creation'; }, 1500);
+            </script>";
+        } else {
+            echo "<script>
+                showNotification('Error', 'Failed to add category. Please try again.', 'error');
+            </script>";
+        }
+    }
+}
+
 // Add stylesheet for notifications
 echo "<style>
     #notifHeader {
@@ -331,23 +429,7 @@ if(isset($_POST['createUser'])) {
 }
 
 // Menu Creation Functionality
-if(isset($_POST['add_product'])){
-   $p_name = $_POST['p_name'];
-   $p_category = $_POST['p_category'];
-   $p_price = $_POST['p_price'];
-   $p_image = $_FILES['p_image']['name'];
-   $p_image_tmp_name = $_FILES['p_image']['tmp_name'];
-   $p_image_folder = '../uploaded_img/'.$p_image;
-
-   $insert_query = mysqli_query($conn, "INSERT INTO `products`(name, category, price, image) VALUES('$p_name', '$p_category', '$p_price', '$p_image')") or die('query failed');
-
-   if($insert_query){
-      move_uploaded_file($p_image_tmp_name, $p_image_folder);
-      $message[] = 'product added successfully';
-   }else{
-      $message[] = 'could not add the product';
-   }
-}
+// Product management code removed
 
 if(isset($_GET['delete'])){
    $delete_id = $_GET['delete'];
@@ -428,8 +510,6 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/inventory-dark.css">
     <link rel="stylesheet" href="css/table-dark.css">
     <link rel="stylesheet" href="css/role-features.css">
-    <link rel="stylesheet" href="css/menu-creation-enhanced.css">
-    <link rel="stylesheet" href="css/add-product-form.css">
     <link rel="stylesheet" href="css/inventory-stats.css">
     <link rel="stylesheet" href="css/theme-variables.css">
     <link rel="stylesheet" href="css/dark-mode-components.css">
@@ -444,15 +524,414 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/image-upload.css">
     <link rel="stylesheet" href="css/adm-style.css">
     <link rel="stylesheet" href="css/admin-enhanced.css">
+    <link rel="stylesheet" href="css/restock.css">
     <script src="js/notifications.js"></script>
+    <script src="js/products-menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const restockForm = document.getElementById('restockForm');
+            console.log('Looking for restock form...');
+            
+            // Debug form fields
+            const formFields = {
+                product: document.getElementById('product_id'),
+                quantity: document.getElementById('quantity'),
+                unitCost: document.getElementById('unitCost'),
+                expirationDate: document.getElementById('expirationDate')
+            };
+            
+            console.log('Form fields found:', formFields);
+            
+            if (restockForm) {
+                console.log('Restock form found');
+                restockForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submitted');
+                    
+                    const formData = new FormData(restockForm);
+                    
+                    // Debug log
+                    for (let [key, value] of formData.entries()) {
+                        console.log(key + ': ' + value);
+                    }
+                    
+                    // Log form data before sending
+                    for (let pair of formData.entries()) {
+                        console.log(pair[0] + ': ' + pair[1]);
+                    }
+
+                    fetch('process_restock.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                throw new Error('Server response: ' + text);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(response => {
+                        console.log('Got response');
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Response data:', data);
+                        if (data.success) {
+                            alert('Stock recorded successfully!');
+                            restockForm.reset();
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error recording stock');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing the request');
+                    });
+                });
+            } else {
+                console.error('Restock form not found!');
+            }
+        });
+    </script>
     <link rel="stylesheet" href="css/enhanced-notifications.css">
+    <script>
+        // Image Preview
+        document.getElementById('product_image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Category Modal
+        function showAddCategoryModal() {
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add New Category</h3>
+                        <span class="close">&times;</span>
+                    </div>
+                    <form id="categoryForm" method="POST">
+                        <div class="form-group">
+                            <label for="category_name">Category Name</label>
+                            <input type="text" id="category_name" name="category_name" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" name="add_category" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Add Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            // Add modal to body
+            document.body.appendChild(modal);
+
+            // Close modal functionality
+            const closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = function() {
+                modal.remove();
+            }
+
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.remove();
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="css/edit-form.css">
     <link rel="stylesheet" href="css/sidebar-enhanced.css">
     <link rel="stylesheet" href="css/user-roles.css">
+    <link rel="stylesheet" href="css/products-menu.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Menu Creation Container Styles */
+        .menu-creation-container {
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .add-product-layout {
+            width: 100%;
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .add-product-form {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 2rem;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-row-landscape {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-group.full-width {
+            flex: 1;
+            width: 100%;
+        }
+
+        .upload-section {
+            margin-top: 1.5rem;
+        }
+
+        [data-theme="dark"] .add-product-form {
+            background: #2a2d3a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-header h2 {
+            color: #FF7F50;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .form-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .form-group label {
+            color: #ffffff;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group select {
+            background: #32364a;
+            border-color: #454b60;
+            color: #ffffff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #FF7F50;
+            box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.2);
+        }
+
+        .category-select-wrapper {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .add-category-btn {
+            background: #FF7F50;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-category-btn:hover {
+            background: #ff6b3d;
+            transform: translateY(-2px);
+        }
+
+        .file-input-container {
+            border: 2px dashed #ddd;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .file-input-container {
+            border-color: #454b60;
+        }
+
+        .file-input-container:hover {
+            border-color: #FF7F50;
+        }
+
+        .file-input-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-input-ui i {
+            font-size: 2rem;
+            color: #FF7F50;
+        }
+
+        .image-preview {
+            margin-top: 1rem;
+            max-width: 200px;
+            margin: 1rem auto 0;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn-primary {
+            background: #FF7F50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b3d;
+            transform: translateY(-2px);
+        }
+
+        /* Product Cards Grid */
+        .product-cards-container {
+            margin-top: 3rem;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .product-card {
+            background: #2a2d3a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .product-details {
+            padding: 1.5rem;
+        }
+
+        .product-details h3 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .product-details h3 {
+            color: #ffffff;
+        }
+
+        .product-details p {
+            margin: 0.25rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        [data-theme="dark"] .product-details p {
+            color: #b0b0b0;
+        }
+
+        .category {
+            color: #FF7F50 !important;
+            font-weight: 500;
+        }
+
+        .markup {
+            font-weight: 600;
+        }
+
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -802,11 +1281,140 @@ if ($_SESSION['role_id'] == 1) {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
+        /* Enhanced Inventory Table Styles */
+        .inventory-table-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95rem;
+        }
+
+        .inventory-table th {
+            background: #f8f9fa;
+            color: #2d3748;
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .inventory-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+            vertical-align: middle;
+        }
+        
+        .expiry-warning {
+            color: #e53e3e;
+            font-weight: 500;
+        }
+        
+        [data-theme="dark"] .expiry-warning {
+            color: #fc8181;
+        }
+        
+        .inventory-table td:nth-child(5), /* UOM column */
+        .inventory-table td:nth-child(6) { /* Expiration date column */
+            font-size: 0.9rem;
+        }
+
+        .inventory-table tbody tr:hover {
+            background-color: #f7fafc;
+        }
+
+        .inventory-table img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .stock-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .stock-badge.sufficient {
+            background-color: #c6f6d5;
+            color: #2f855a;
+        }
+
+        .stock-badge.low {
+            background-color: #feebc8;
+            color: #c05621;
+        }
+
+        .stock-badge.critical {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+
+        .expiry-date {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .expiry-warning {
+            color: #c53030;
+            font-weight: 500;
+        }
+
+        .uom-badge {
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+
         /* Dark Mode Inventory Styles */
         [data-theme="dark"] .inventory-table-container {
             background: #1a1c23;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             border: 1px solid #2d3748;
+        }
+
+        [data-theme="dark"] .inventory-table th {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-bottom-color: #4a5568;
+        }
+
+        [data-theme="dark"] .inventory-table td {
+            border-bottom-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .inventory-table tbody tr:hover {
+            background-color: #2d3748;
+        }
+
+        [data-theme="dark"] .product-name {
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .uom-badge {
+            background: #4a5568;
+            color: #e2e8f0;
         }
 
         [data-theme="dark"] table {
@@ -927,10 +1535,33 @@ if ($_SESSION['role_id'] == 1) {
             background: rgba(255, 127, 80, 0.05);
         }
 
+        /* Sidebar group header */
+        .menu-header {
+            font-size: 12px;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            padding: 10px 16px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
+
+        .menu-separator {
+            height: 1px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.04);
+        }
+
+        /* Ensure logout is visually separated and pinned near bottom if layout supports it */
+        .logout-item {
+            margin-top: 12px;
+        }
+
         /* Global Font Styles */
         * {
             font-family: 'Inter', sans-serif;
         }
+
+
 
         /* Dashboard Styles */
         .stats-container {
@@ -1410,6 +2041,278 @@ if ($_SESSION['role_id'] == 1) {
         .dashboard-orders-table .status-badge.cancelled {
             background: #f8d7da;
             color: #721c24;
+        }
+
+        /* Restocking Styles */
+        .restocking-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .restock-modal-content {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] .restock-modal-content {
+            background: #2a2d3a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .restock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f5;
+        }
+
+        .restock-header h2 {
+            color: #FF7F50;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 127, 80, 0.1);
+            color: #FF7F50;
+        }
+
+        .restock-form .form-row {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .restock-form .form-group {
+            flex: 1;
+        }
+
+        .restock-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .restock-form label {
+            color: #ffffff;
+        }
+
+        .restock-form input,
+        .restock-form select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .restock-form input,
+        [data-theme="dark"] .restock-form select {
+            background: #32364a;
+            border-color: #454b60;
+            color: #ffffff;
+        }
+
+        .stock-info {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        [data-theme="dark"] .stock-info {
+            color: #b0b0b0;
+        }
+
+        .uom-display {
+            margin-left: 0.5rem;
+            color: #666;
+        }
+
+        .expiration-warning {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .expiration-status {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .expiration-status.good {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .expiration-status.warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .restock-records {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] .restock-records {
+            background: #2a2d3a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .records-header h3 {
+            color: #333;
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        [data-theme="dark"] .records-header h3 {
+            color: #ffffff;
+        }
+
+        .restock-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .restock-table th,
+        .restock-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eef0f5;
+        }
+
+        .restock-table th {
+            font-weight: 600;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        [data-theme="dark"] .restock-table th {
+            background: #32364a;
+            color: #ffffff;
+            border-bottom-color: #454b60;
+        }
+
+        [data-theme="dark"] .restock-table td {
+            border-bottom-color: #454b60;
+            color: #ffffff;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.status-pending {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-badge.status-completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-badge.status-cancelled {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.5s ease-out;
+            max-width: 350px;
+        }
+
+        .notification.success {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .notification.error {
+            background-color: #f44336;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-icon {
+            font-size: 20px;
+        }
+
+        .notification-message {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: currentColor;
+            padding: 0;
+            cursor: pointer;
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
         }
 
         @media (max-width: 1200px) {
@@ -2398,17 +3301,16 @@ if ($_SESSION['role_id'] == 1) {
                 </a>
             </li>
 
-            <!-- Content Management -->
+            <div class="menu-separator"></div>
+
+            <!-- Maintenance Group -->
+            <li class="menu-header">Maintenance</li>
             <li class="menu-item" id="landing-item">
                 <a href="#" data-section="landing">
                     <i class="fas fa-home"></i>
                     <span>Landing Settings</span>
                 </a>
             </li>
-
-            <div class="menu-separator"></div>
-
-            <!-- User Management -->
             <li class="menu-item" id="roles-item">
                 <a href="#" data-section="roles">
                     <i class="fas fa-user-shield"></i>
@@ -2421,26 +3323,42 @@ if ($_SESSION['role_id'] == 1) {
                     <span>User Accounts</span>
                 </a>
             </li>
+            <li class="menu-item" id="products-item">
+                <a href="#" onclick="toggleProductsMenu(event)">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-utensils"></i>
+                            <span>Products</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </a>
+            </li>
+            <div class="submenu-items" style="display: none;">
+                <li class="menu-item submenu-item">
+                    <a href="#" data-section="menu-creation" style="padding-left: 3.5rem;">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Products</span>
+                    </a>
+                </li>
+                <li class="menu-item submenu-item">
+                    <a href="#" data-section="restocking" style="padding-left: 3.5rem;">
+                        <i class="fas fa-box"></i>
+                        <span>Restocking</span>
+                    </a>
+                </li>
+            </div>
 
             <div class="menu-separator"></div>
 
-            <!-- Product Management -->
+            <!-- Monitoring Group -->
+            <li class="menu-header">Monitoring</li>
             <li class="menu-item" id="inventory-item">
                 <a href="#" data-section="inventory">
                     <i class="fas fa-boxes"></i>
                     <span>Inventory</span>
                 </a>
             </li>
-            <li class="menu-item" id="menu-creation-item">
-                <a href="#" data-section="menu-creation">
-                    <i class="fas fa-utensils"></i>
-                    <span>Menu Creation</span>
-                </a>
-            </li>
-
-            <div class="menu-separator"></div>
-
-            <!-- Business Intelligence -->
             <li class="menu-item" id="reports-item">
                 <a href="#" data-section="reports">
                     <i class="fas fa-chart-line"></i>
@@ -2456,11 +3374,11 @@ if ($_SESSION['role_id'] == 1) {
 
             <div class="menu-separator"></div>
 
-            <!-- Logout -->
-            <li class="menu-item">
+            <!-- Logout (pinned to bottom visually by existing layout) -->
+            <li class="menu-item logout-item">
                 <a href="#" onclick="handleLogout(event)" style="cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
+              <span>Logout</span>
                 </a>
             </li>
         </ul>
@@ -2960,6 +3878,8 @@ if ($_SESSION['role_id'] == 1) {
                                 <th>Product Name</th>
                                 <th>Category</th>
                                 <th>Current Stock</th>
+                                <th>UOM</th>
+                                <th>Expiration Date</th>
                                 <th>Price</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -2989,6 +3909,25 @@ if ($_SESSION['role_id'] == 1) {
                                 <td><?php echo $product['name']; ?></td>
                                 <td><?php echo $product['category'] ?? 'Uncategorized'; ?></td>
                                 <td><?php echo $product['stock']; ?></td>
+                                <td><?php echo $product['uom'] ?? 'N/A'; ?></td>
+                                <td><?php 
+                                    if (!empty($product['expiry_date'])) {
+                                        $expiry_date = new DateTime($product['expiry_date']);
+                                        $now = new DateTime();
+                                        $diff = $now->diff($expiry_date);
+                                        $days_until_expiry = $diff->days;
+                                        
+                                        if ($now > $expiry_date) {
+                                            echo '<span class="expiry-warning">Expired</span>';
+                                        } else if ($days_until_expiry <= 30) {
+                                            echo '<span class="expiry-warning">Expires in ' . $days_until_expiry . ' days</span>';
+                                        } else {
+                                            echo date('M d, Y', strtotime($product['expiry_date']));
+                                        }
+                                    } else {
+                                        echo 'N/A';
+                                    }
+                                ?></td>
                                 <td>₱<?php echo number_format($product['price'], 2); ?></td>
                                 <td><span class="status-badge <?php echo $status_class; ?>"><?php echo $stock_status; ?></span></td>
                                 <td class="action-buttons">
@@ -3038,144 +3977,270 @@ if ($_SESSION['role_id'] == 1) {
             </div>
         </section>
 
-        <!-- Menu Creation Section -->
-        <section id="menu-creation-section" class="content-section hidden">
-            
-            <?php if(isset($message) && is_array($message)): ?>
-                <?php foreach($message as $msg): ?>
-                    <script>
-                        showNotification(<?php echo strpos($msg, 'successfully') !== false ? "'Success'" : "'Error'" ?>,                             '<?php echo strpos($msg, 'successfully') !== false ? 'Success' : 'Error' ?>',
-                            '<?php echo addslashes($msg) ?>'
-                        );
-                    </script>
-                <?php endforeach; ?>
-            <?php endif; ?>
-
-            <div class="container">
-                <form action="" method="post" class="add-product-form" enctype="multipart/form-data">
-                    <h3>Add a new product</h3>
-                    <input type="text" name="p_name" placeholder="Enter the product name" class="box" required>
-                    <select name="p_category" class="box" required>
-                        <option value="">Select Category</option>
-                        <option value="Main Dishes">Main Dishes</option>
-                        <option value="Side Dishes">Side Dishes</option>
-                        <option value="Desserts">Desserts</option>
-                    </select>
-                    <input type="number" name="p_price" min="0" placeholder="Enter the product price" class="box" required>
-                    <div class="form-group">
-                        <label for="p_image">Product Image: <span class="label-hint">(Add product image here)</span></label>
-                        <div class="file-input-container">
-                            <input type="file" id="p_image" name="p_image" accept="image/png, image/jpg, image/jpeg" required>
-                            <div class="file-input-hint">Click here to upload product image</div>
-                        </div>
-                    </div>
-                    <input type="submit" value="Add Product" name="add_product" class="btn">
-                </form>
-
-                <div class="display-product-table">
-                    <div class="table-header">
-                        <div class="table-title">
-                            <i class="fas fa-utensils"></i> Product List
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <th width="80">Image</th>
-                            <th>Product Name</th>
-                            <th width="120">Category</th>
-                            <th width="100">Price</th>
-                            <th width="120">Actions</th>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $select_products = mysqli_query($conn, "SELECT * FROM `products`");
-                            if(mysqli_num_rows($select_products) > 0){
-                                while($row = mysqli_fetch_assoc($select_products)){
-                            ?>
-                            <tr>
-                                <td><img src="../uploaded_img/<?php echo $row['image']; ?>" class="product-image" alt="<?php echo $row['name']; ?>"></td>
-                                <td>
-                                    <div style="font-weight: 500;"><?php echo $row['name']; ?></div>
-                                </td>
-                                <td>
-                                    <span class="category-badge <?php echo strtolower(str_replace(' ', '-', $row['category'])); ?>">
-                                        <i class="fas fa-circle" style="font-size: 8px;"></i>
-                                        <?php echo $row['category'] ?? 'Uncategorized'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style="font-weight: 500;">₱<?php echo number_format($row['price'], 2); ?></div>
-                                </td>
-                                <td class="action-buttons">
-                                    <a href="?delete=<?php echo $row['id']; ?>&section=menu-creation" class="action-btn delete-btn" onclick="return confirm('Are you sure you want to delete this item?');">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                    <a href="?edit=<?php echo $row['id']; ?>&section=menu-creation" class="action-btn update-btn">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php
-                                }    
-                            }else{
-                                echo "<div class='empty'>no product added</div>";
-                            };
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="edit-form-container">
-                    <?php
-                    if(isset($_GET['edit'])){
-                        $edit_id = $_GET['edit'];
-                        $edit_query = mysqli_query($conn, "SELECT * FROM `products` WHERE id = $edit_id");
-                        if(mysqli_num_rows($edit_query) > 0){
-                            while($fetch_edit = mysqli_fetch_assoc($edit_query)){
-                    ?>
-                    <form action="" method="post" enctype="multipart/form-data" id="updateForm">
-                        <h3>Update Product</h3>
-                        <img src="../uploaded_img/<?php echo $fetch_edit['image']; ?>" height="200" alt="" class="preview-image">
-                        <input type="hidden" name="update_p_id" value="<?php echo $fetch_edit['id']; ?>">
+        <!-- Restocking Section -->
+        <section id="restocking-section" class="content-section hidden">
+            <div class="section-header">
+                <h2>Restocking</h2>
+            </div>
+            <div class="restocking-container">
+                <div class="restock-content">
+                    <h2>Record Restocking</h2>
+                    <form id="restockForm" method="POST">
                         <div class="form-group">
-                            <label for="update_p_name">Product Name</label>
-                            <input type="text" id="update_p_name" class="box" required name="update_p_name" value="<?php echo htmlspecialchars($fetch_edit['name']); ?>">
-                        </div>
-                        <div class="form-group">
-                            <label for="update_p_category">Category</label>
-                            <select id="update_p_category" class="box" required name="update_p_category">
-                                <option value="Main Dishes" <?php echo ($fetch_edit['category'] == 'Main Dishes') ? 'selected' : ''; ?>>Main Dishes</option>
-                                <option value="Side Dishes" <?php echo ($fetch_edit['category'] == 'Side Dishes') ? 'selected' : ''; ?>>Side Dishes</option>
-                                <option value="Desserts" <?php echo ($fetch_edit['category'] == 'Desserts') ? 'selected' : ''; ?>>Desserts</option>
+                            <label for="product_id">Product</label>
+                            <select id="product_id" name="product_id" required>
+                                <option value="">Select a product</option>
+                                <?php
+                                $product_query = "SELECT id, product_name, unit_measurement FROM new_products ORDER BY product_name";
+                                $product_result = mysqli_query($conn, $product_query);
+                                while($row = mysqli_fetch_assoc($product_result)) {
+                                    echo "<option value='" . $row['id'] . "'>" 
+                                        . htmlspecialchars($row['product_name']) . " (" . $row['unit_measurement'] . ")</option>";
+                                }
+                                ?>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="update_p_price">Price (₱)</label>
-                            <input type="number" id="update_p_price" min="0" class="box" required name="update_p_price" value="<?php echo $fetch_edit['price']; ?>">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" required>
                         </div>
-                        <div class="file-input-container">
-                            <label for="updateImage">Product Image</label>
-                            <input type="file" class="box" name="update_p_image" accept="image/png, image/jpg, image/jpeg" id="updateImage">
-                            <small class="file-hint">Leave empty to keep current image</small>
+                        <div class="form-group">
+                            <label for="unitCost">Cost per Unit (₱)</label>
+                            <input type="number" id="unitCost" name="unitCost" step="0.01" min="0.01" required>
                         </div>
-                        <div class="button-group">
-                            <button type="submit" name="update_product" class="btn">
-                                <i class="fas fa-save"></i> Save Changes
-                            </button>
-                            <button type="button" class="option-btn" id="close-edit">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
+                        <div class="form-group">
+                            <label for="expirationDate">Expiration Date</label>
+                            <input type="date" id="expirationDate" name="expirationDate" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Record Restocking</button>
                         </div>
                     </form>
-                    <?php
-                            }
-                        }
-                        echo "<script>document.querySelector('.edit-form-container').style.display = 'flex';</script>";
-                        echo "<script>showSection('menu-creation');</script>";
-                    }
-                    ?>
+                </div>
+
+                <!-- Restock Records Table -->
+                <div class="restock-records">
+                    <div class="records-header">
+                        <h3>Recent Restocking Records</h3>
+                       
+                    </div>
+                    <div class="table-container">
+                        <table class="restock-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Current Stock</th>
+                                    <th>Restock Quantity</th>
+                                    <th>Cost/Unit</th>
+                                    <th>Total Cost</th>
+                                    <th>Expiration Date</th>
+                                    <th>Restock Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $restock_query = "SELECT r.*, p.unit_measurement 
+                                                FROM restocking r 
+                                                JOIN new_products p ON r.product_id = p.id 
+                                                ORDER BY r.restock_date DESC LIMIT 10";
+                                $restock_result = mysqli_query($conn, $restock_query);
+                                
+                                while($restock = mysqli_fetch_assoc($restock_result)) {
+                                    $total_cost = $restock['restock_quantity'] * $restock['cost_per_unit'];
+                                    echo "<tr>";
+                                    echo "<td>" . htmlspecialchars($restock['product_name']) . "</td>";
+                                    echo "<td>" . $restock['current_stock'] . " " . $restock['unit_measurement'] . "</td>";
+                                    echo "<td>" . $restock['restock_quantity'] . " " . $restock['unit_measurement'] . "</td>";
+                                    echo "<td>₱" . number_format($restock['cost_per_unit'], 2) . "</td>";
+                                    echo "<td>₱" . number_format($total_cost, 2) . "</td>";
+                                    echo "<td>" . date('M d, Y', strtotime($restock['expiration_date'])) . "</td>";
+                                    echo "<td>" . date('M d, Y', strtotime($restock['restock_date'])) . "</td>";
+                                    echo "<td><span class='status-badge status-" . strtolower($restock['status']) . "'>" 
+                                         . ucfirst($restock['status']) . "</span></td>";
+                                    echo "</tr>";
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Menu Creation Section -->
+        <section id="menu-creation-section" class="content-section hidden">
+            <div class="menu-creation-container">
+                <div class="add-product-layout">
+                    <div class="form-side">
+                        <div class="add-product-form">
+                            <div class="form-header">
+                                <h2>ADD PRODUCT</h2>
+                            </div>
+                            <form action="" method="POST" enctype="multipart/form-data">
+                                <div class="form-content">
+                                    <div class="form-row-landscape">
+                                        <div class="input-group">
+                                            <label for="product_name">Product Name</label>
+                                            <input type="text" id="product_name" name="product_name" required>
+                                        </div>
+                                        <div class="input-group">
+                                            <label for="markup_value">Mark up value</label>
+                                            <input type="number" id="markup_value" name="markup_value" step="0.01" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row-landscape">
+                                        <div class="input-group">
+                                            <label for="category">Category</label>
+                                            <div class="category-select-wrapper">
+                                                <select id="category" name="category" required>
+                                                    <option value="">Select Category</option>
+                                                    <?php
+                                                    $query = "SELECT * FROM product_categories ORDER BY id";
+                                                    $result = mysqli_query($conn, $query);
+                                                    while($row = mysqli_fetch_assoc($result)) {
+                                                        echo "<option value='" . $row['id'] . "'>" . htmlspecialchars($row['category_name']) . "</option>";
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <button type="button" class="add-category-btn" onclick="showAddCategoryModal()">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="input-group">
+                                            <label for="unit_measurement">Unit of Measurement</label>
+                                            <select id="unit_measurement" name="unit_measurement" required>
+                                                <option value="">Select UOM</option>
+                                                <option value="piece">Piece</option>
+                                                <option value="pack">Pack</option>
+                                                <option value="kg">Kilogram</option>
+                                                <option value="g">Gram</option>
+                                                <option value="ml">Milliliter</option>
+                                                <option value="l">Liter</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row-landscape upload-section">
+                                        <div class="input-group full-width">
+                                            <label for="product_image">Upload Image</label>
+                                            <div class="file-input-container">
+                                                <input type="file" id="product_image" name="product_image" accept="image/*" required>
+                                                <div class="file-input-ui">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>Drop image here or click to upload</span>
+                                                    <small>Supported formats: PNG, JPG, JPEG</small>
+                                                </div>
+                                                <div id="imagePreview" class="image-preview"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" name="add_product" class="btn btn-primary">
+                                            <i class="fas fa-plus-circle"></i> Add Product
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Cards Container -->
+                <div class="product-cards-container">
+                    <div class="product-grid">
+                        <?php
+                        $products_query = "SELECT * FROM new_products ORDER BY created_at DESC";
+                        $products_result = mysqli_query($conn, $products_query);
+                        
+                        while($product = mysqli_fetch_assoc($products_result)) {
+                            echo '<div class="product-card">';
+                            echo '<img src="../uploaded_img/' . htmlspecialchars($product['image']) . '" alt="' . htmlspecialchars($product['product_name']) . '">';
+                            echo '<div class="product-details">';
+                            echo '<h3>' . htmlspecialchars($product['product_name']) . '</h3>';
+                            echo '<p class="category">' . htmlspecialchars($product['category_name']) . '</p>';
+                            echo '<p class="markup">Markup: ₱' . htmlspecialchars($product['markup_value']) . '</p>';
+                            echo '<p class="uom">UOM: ' . htmlspecialchars($product['unit_measurement']) . '</p>';
+                            echo '</div>';
+                            echo '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inventory Section -->
+                </form>
+            </div>
+
+            <!-- Add Category Modal -->
+            <div id="addCategoryModal" class="modal">
+                <div class="category-modal-content">
+                    <div class="category-modal-header">
+                        <h3>Add New Category</h3>
+                        <span class="close" onclick="closeAddCategoryModal()">&times;</span>
+                    </div>
+                    <form id="addCategoryForm" onsubmit="return handleAddCategory(event)">
+                        <div class="form-group">
+                            <label for="newCategoryName">Category Name</label>
+                            <input type="text" id="newCategoryName" name="categoryName" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddCategoryModal()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                function showAddCategoryModal() {
+                    document.getElementById('addCategoryModal').style.display = 'block';
+                }
+
+                function closeAddCategoryModal() {
+                    document.getElementById('addCategoryModal').style.display = 'none';
+                }
+
+                async function handleAddCategory(event) {
+                    event.preventDefault();
+                    const categoryName = document.getElementById('newCategoryName').value;
+                    
+                    try {
+                        const response = await fetch('add_category.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `categoryName=${encodeURIComponent(categoryName)}`
+                        });
+
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Add new option to select
+                            const select = document.getElementById('category');
+                            const option = new Option(categoryName, data.categoryId);
+                            select.add(option);
+                            select.value = data.categoryId;
+                            
+                            // Close modal and show success message
+                            closeAddCategoryModal();
+                            showNotification('Success', 'Category added successfully');
+                        } else {
+                            showNotification('Error', data.message || 'Failed to add category');
+                        }
+                    } catch (error) {
+                        showNotification('Error', 'Failed to add category');
+                    }
+
+                    return false;
+                }
+            </script>
         </section>
 
         <?php
@@ -3359,7 +4424,7 @@ if ($_SESSION['role_id'] == 1) {
                                 </div>
                                 <div class="permission-item">
                                     <input type="checkbox" id="perm_menu" name="permissions[]" value="menu">
-                                    <label for="perm_menu">Menu Creation</label>
+                                    <label for="perm_menu">Products</label>
                                 </div>
                                 <div class="permission-item">
                                     <input type="checkbox" id="perm_orders" name="permissions[]" value="orders">
@@ -4741,6 +5806,13 @@ if ($_SESSION['role_id'] == 1) {
     </div>
 
     <script>
+        // Settings section functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Settings initialization code here
+                });
+            }
+        });
+
         // Notification function
         // Function to update section title and icon
         function updateSectionTitle(section) {
@@ -4751,7 +5823,7 @@ if ($_SESSION['role_id'] == 1) {
             const sectionInfo = {
                 'dashboard': { title: 'Dashboard', icon: 'fas fa-chart-pie' },
                 'inventory': { title: 'Inventory Management', icon: 'fas fa-boxes' },
-                'menu-creation': { title: 'Menu Creation', icon: 'fas fa-utensils' },
+                'menu-creation': { title: 'Products', icon: 'fas fa-utensils' },
                 'roles': { title: 'User Roles', icon: 'fas fa-user-shield' },
                 'accounts': { title: 'User Accounts', icon: 'fas fa-users-cog' },
                 'reports': { title: 'Reports', icon: 'fas fa-chart-line' },
@@ -4859,7 +5931,8 @@ if ($_SESSION['role_id'] == 1) {
             const sectionMap = {
                 'dashboard': { icon: 'chart-pie', title: 'Dashboard' },
                 'inventory': { icon: 'boxes', title: 'Inventory Management' },
-                'menu-creation': { icon: 'utensils', title: 'Menu Creation' },
+                'menu-creation': { icon: 'plus', title: 'Add New Product' },
+                'restocking': { icon: 'box', title: 'Products' },
                 'orders': { icon: 'shopping-cart', title: 'Orders' },
                 'roles': { icon: 'user-shield', title: 'User Roles' },
                 'accounts': { icon: 'users-cog', title: 'User Accounts' },
@@ -5042,7 +6115,7 @@ document.getElementById('stockUpdateForm')?.addEventListener('submit', function(
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/dashboard.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/header-manager.js"></script>
 <script>
     // Initialize Revenue Chart
     document.addEventListener('DOMContentLoaded', function() {
@@ -5297,7 +6370,7 @@ document.querySelector('.close-modal')?.addEventListener('click', function() {
 // Function to handle AJAX responses
 function handleAjaxResponse(response, action) {
     if (response.success) {
-        notifications.showSuccess('Success', `Item ${action} successfully`);
+        showNotification('Success', `Item ${action} successfully`, 'success');
     } else {
         showNotification('Error', response.error || `Failed to ${action} item`, 'error');
     }
@@ -5324,7 +6397,7 @@ window.addEventListener('load', function() {
     if (pending) {
         const {action, timestamp} = JSON.parse(pending);
         if (Date.now() - timestamp < 1000) { // Only show if recent
-            notifications.showSuccess('Success', `Item ${action} successfully`);
+            showNotification('Success', `Item ${action} successfully`, 'success');
         }
         sessionStorage.removeItem('pendingNotification');
     }
@@ -6062,6 +7135,34 @@ window.addEventListener('load', function() {
                     observer.observe(landingSection, { attributes: true });
                 }
             });
+
+            // Handle submenu interactions
+            document.addEventListener('DOMContentLoaded', function() {
+                // Prevent parent menu item from being clickable
+                document.querySelectorAll('.menu-item.has-submenu > a').forEach(parentLink => {
+                    parentLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                    });
+                });
+                
+                // Add click handlers to submenu items
+                document.querySelectorAll('.submenu a').forEach(submenuLink => {
+                    submenuLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const section = this.getAttribute('data-section');
+                        if (section) {
+                            // Remove active class from all submenu items
+                            document.querySelectorAll('.submenu li').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            
+                            // Add active class to clicked submenu item
+                            this.closest('.menu-item').classList.add('active');
+                            
+                            showSection(section);
+                        }
+                    });
+                });
         </script>
     </body>
 </html>

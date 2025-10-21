@@ -1,4 +1,30 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Title mapping for sections
+    const titleMap = {
+        'dashboard': { icon: 'fas fa-tachometer-alt', text: 'Dashboard' },
+        'landing': { icon: 'fas fa-home', text: 'Landing Settings' },
+        'roles': { icon: 'fas fa-user-shield', text: 'User Roles' },
+        'accounts': { icon: 'fas fa-users-cog', text: 'User Accounts' },
+        'menu-creation': { icon: 'fas fa-utensils', text: 'Products' },
+        'restocking': { icon: 'fas fa-box-open', text: 'Products' },
+        'inventory': { icon: 'fas fa-boxes', text: 'Inventory' },
+        'reports': { icon: 'fas fa-chart-line', text: 'Sales Report' },
+        'orders': { icon: 'fas fa-shopping-basket', text: 'Orders' }
+    };
+
+    // Function to update page header
+    function updatePageHeader(sectionId) {
+        const sectionInfo = titleMap[sectionId] || { icon: 'fas fa-question', text: 'Unknown Section' };
+        const titleDiv = document.getElementById('section-title');
+        
+        if (titleDiv) {
+            titleDiv.innerHTML = `
+                <i class="${sectionInfo.icon}"></i>
+                <h1>${sectionInfo.text}</h1>
+            `;
+        }
+    }
+
     // Menu section handling
     document.querySelectorAll('.menu-item a[data-section]').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -10,6 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Section display function
     window.showSection = function(sectionId) {
+        const baseSectionId = sectionId ? sectionId.replace('-section', '') : 'dashboard';
+        
         // Remove active class from all sections and menu items
         document.querySelectorAll('.content-section').forEach(section => {
             section.classList.remove('active');
@@ -21,13 +49,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Add active class to clicked menu item
-        const menuItem = document.getElementById(`${sectionId}-item`);
+        const menuItem = document.getElementById(`${baseSectionId}-item`);
         if (menuItem) {
             menuItem.classList.add('active');
         }
         
         // Append -section if it's not already there
-        const fullSectionId = sectionId.endsWith('-section') ? sectionId : `${sectionId}-section`;
+        const fullSectionId = sectionId && sectionId.endsWith('-section') ? sectionId : `${baseSectionId}-section`;
         
         // Show the selected section
         const sectionToShow = document.getElementById(fullSectionId);
@@ -36,9 +64,12 @@ document.addEventListener('DOMContentLoaded', function() {
             sectionToShow.style.display = 'block';
         }
         
+        // Update the page header
+        updatePageHeader(baseSectionId);
+        
         // Update URL without reloading
-        const newUrl = window.location.pathname + '?section=' + sectionId;
-        window.history.pushState({ section: sectionId }, '', newUrl);
+        const newUrl = window.location.pathname + '?section=' + baseSectionId;
+        window.history.pushState({ section: baseSectionId }, '', newUrl);
     };
 
     // Initialize revenue chart if it exists

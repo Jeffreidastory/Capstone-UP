@@ -1622,3 +1622,85 @@ Crinkles (1)
 ----------------------------------------
 [2025-10-17 01:47:20] Successfully completed stock deduction for Order #101
 ----------------------------------------
+[2025-10-18 16:06:07] Starting stock deduction for Order #115\nData: Array
+(
+    [items] => Lasagna (1)
+Crinkles (1)
+    [total_products] => 2
+)
+
+----------------------------------------
+[2025-10-18 16:06:07] Processing item: Lasagna (1)
+----------------------------------------
+[2025-10-18 16:06:07] Updating stock for Lasagna\nData: Array
+(
+    [product_id] => 13
+    [current_stock] => 45
+    [quantity_to_deduct] => 1
+    [new_stock] => 44
+)
+
+----------------------------------------
+[2025-10-18 16:06:07] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 13
+    [quantity] => 1
+    [previous_stock] => 45
+    [new_stock] => 44
+)
+
+----------------------------------------
+[2025-10-18 16:06:07] Processing item: Crinkles (1)
+----------------------------------------
+[2025-10-18 16:06:07] Updating stock for Crinkles\nData: Array
+(
+    [product_id] => 15
+    [current_stock] => 15
+    [quantity_to_deduct] => 1
+    [new_stock] => 14
+)
+
+----------------------------------------
+[2025-10-18 16:06:07] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 15
+    [quantity] => 1
+    [previous_stock] => 15
+    [new_stock] => 14
+)
+
+----------------------------------------
+[2025-10-18 16:06:07] Successfully completed stock deduction for Order #115
+----------------------------------------
+[2025-10-18 16:18:38] Starting stock deduction for Order #114\nData: Array
+(
+    [items] => Pastilan (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-18 16:18:38] Processing item: Pastilan (1)
+----------------------------------------
+[2025-10-18 16:18:38] Updating stock for Pastilan\nData: Array
+(
+    [product_id] => 14
+    [current_stock] => 31
+    [quantity_to_deduct] => 1
+    [new_stock] => 30
+)
+
+----------------------------------------
+[2025-10-18 16:18:38] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 14
+    [quantity] => 1
+    [previous_stock] => 31
+    [new_stock] => 30
+)
+
+----------------------------------------
+[2025-10-18 16:18:38] Successfully completed stock deduction for Order #114
+----------------------------------------

@@ -123,7 +123,7 @@ $currentStatusIndex = array_search(strtolower($order['status']), $statusOrder);
             <button class="complete-order-btn" onclick="confirmOrderCompletion(<?php echo $order['id']; ?>)">
                 <i class="fas fa-check-circle"></i> Confirm Order Received
             </button>
-            <p class="confirmation-note">Please confirm once you have received your order</p>
+            <p class="confirmation-note">Please click "Confirm Order Received" once you have received your order. The order will be automatically marked as completed after 24 hours.</p>
         </div>
         <?php endif; ?>
 

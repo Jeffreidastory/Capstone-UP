@@ -1,0 +1,49 @@
+/* Products Menu Specific Styles */
+#products-item {
+    position: relative;
+}
+
+#products-item > a {
+    width: 100%;
+}
+
+#products-item .fa-chevron-down {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+#products-item.active .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.submenu-items {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 2px solid #FF7F50;
+    margin-left: 1.5rem;
+}
+
+.submenu-item {
+    padding: 0 !important;
+}
+
+.submenu-item a {
+    padding: 0.75rem 1rem 0.75rem 3rem !important;
+    font-size: 0.9rem !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.submenu-item a:hover {
+    background: rgba(255, 127, 80, 0.1) !important;
+    color: #FF7F50 !important;
+}
+
+.submenu-item i {
+    font-size: 0.9rem;
+    color: #FF7F50;
+    width: 16px;
+    text-align: center;
+}

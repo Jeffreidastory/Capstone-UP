@@ -116,9 +116,48 @@ while ($row = $result->fetch_assoc()) {
 
         .header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 1.5rem;
             margin-bottom: 2rem;
+        }
+
+        .order-filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            color: #4b5563;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .filter-btn i {
+            font-size: 1rem;
+        }
+
+        .filter-btn:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-btn.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #4338ca;
         }
 
         .orders-grid {
@@ -507,7 +546,7 @@ while ($row = $result->fetch_assoc()) {
         }
 
         .btn {
-            padding: 0.75rem 1rem;
+            padding: 0.5rem 1rem;
             border: none;
             border-radius: 0.375rem;
             font-weight: 500;
@@ -519,6 +558,7 @@ while ($row = $result->fetch_assoc()) {
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            height: 2.5rem;
         }
 
         .btn-primary {
@@ -698,6 +738,23 @@ while ($row = $result->fetch_assoc()) {
         <main class="main-content">
             <div class="header">
                 <h1>Order Processing</h1>
+                <div class="order-filters">
+                    <button class="filter-btn active" data-status="all">
+                        <i class="fas fa-list-ul"></i> All Orders
+                    </button>
+                    <button class="filter-btn" data-status="needs-verification">
+                        <i class="fas fa-wallet"></i> GCash Payments
+                    </button>
+                    <button class="filter-btn" data-status="pending">
+                        <i class="fas fa-money-bill"></i> COD Orders
+                    </button>
+                    <button class="filter-btn" data-status="preparing">
+                        <i class="fas fa-utensils"></i> Preparing
+                    </button>
+                    <button class="filter-btn" data-status="out for delivery">
+                        <i class="fas fa-motorcycle"></i> Out for Delivery
+                    </button>
+                </div>
             </div>
 
             <div class="orders-grid">
@@ -759,11 +816,6 @@ while ($row = $result->fetch_assoc()) {
                                 <button class="btn btn-primary check-payment" onclick="showPaymentVerification(<?php echo $order['id']; ?>)">
                                     <i class="fas fa-check-circle"></i> CHECK PAYMENT
                                 </button>
-                                <?php if (!empty($order['reference_number']) && $order['reference_number'] != 'N/A'): ?>
-                                <div class="payment-info">
-                                    <small>GCash Ref: <?php echo htmlspecialchars($order['reference_number']); ?></small>
-                                </div>
-                                <?php endif; ?>
                             <?php elseif ($order['status'] == 'pending'): ?>
                                 <button class="btn btn-primary" onclick="updateStatus(<?php echo $order['id']; ?>, 'preparing')">
                                     <i class="fas fa-utensils"></i> Start Preparing

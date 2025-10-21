@@ -175,6 +175,10 @@ $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <i class="fas fa-check-circle success-icon"></i>
             <h1>Order Confirmed!</h1>
             <p>Thank you for your order. We'll start preparing it right away!</p>
+            <p class="order-note" style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                <i class="fas fa-info-circle"></i> 
+                Please remember to click "Confirm Order Received" after receiving your delivery. Orders will be automatically marked as completed after 24 hours from delivery.
+            </p>
         </div>
 
         <div class="order-details">

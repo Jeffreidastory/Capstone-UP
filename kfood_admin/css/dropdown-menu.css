@@ -1,0 +1,89 @@
+.menu-item.has-submenu {
+    position: relative;
+}
+
+.menu-item.has-submenu > a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem !important;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.menu-item.has-submenu > a::after {
+    content: '\f107';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.submenu {
+    display: none;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.2);
+    margin-left: 3.2rem;
+}
+
+.menu-item.has-submenu:hover .submenu {
+    display: block;
+}
+
+.submenu .menu-item {
+    margin: 0;
+    padding: 0;
+}
+
+.submenu .menu-item a {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7) !important;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+    border-left: 2px solid rgba(255, 127, 80, 0.3);
+}
+
+.submenu .menu-item a i {
+    font-size: 0.85rem;
+    width: 16px;
+    text-align: center;
+    color: rgba(255, 127, 80, 0.9);
+}
+
+.submenu .menu-item a:hover {
+    background: rgba(255, 127, 80, 0.1);
+    color: #FF7F50 !important;
+    border-left: 2px solid #FF7F50;
+}
+
+/* Parent menu item hover state */
+.menu-item.has-submenu:hover > a {
+    color: #FF7F50 !important;
+}
+
+.menu-item.has-submenu:hover > a::after {
+    transform: rotate(180deg);
+    color: #FF7F50;
+}
+
+.menu-item.has-submenu > a > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Dark theme specific styles */
+[data-theme="dark"] .submenu {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .submenu .menu-item a:hover {
+    background: rgba(255, 127, 80, 0.1);
+}

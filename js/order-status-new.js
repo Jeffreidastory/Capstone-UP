@@ -149,12 +149,86 @@ function handlePayment(action) {
     });
 }
 
+// Filter orders function
+function filterOrders(status) {
+    const orders = document.querySelectorAll('.order-card');
+    
+    orders.forEach(order => {
+        const orderStatus = order.dataset.status;
+        const paymentMethod = order.querySelector('.payment-method')?.textContent.toLowerCase() || '';
+        const isGcash = paymentMethod.includes('gcash');
+        const isCOD = !isGcash;
+
+        if (status === 'all') {
+            order.style.display = 'block';
+        } else if (status === 'needs-verification') {
+            // Show only pending GCash payments
+            order.style.display = (orderStatus === 'pending' && isGcash) ? 'block' : 'none';
+        } else if (status === 'pending') {
+            // Show only pending COD payments
+            order.style.display = (orderStatus === 'pending' && isCOD) ? 'block' : 'none';
+        } else {
+            order.style.display = orderStatus === status ? 'block' : 'none';
+        }
+    });
+
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+}
+
+// Filter orders function
+function filterOrders(status) {
+    const orders = document.querySelectorAll('.order-card');
+    
+    orders.forEach(order => {
+        const orderStatus = order.dataset.status;
+        const paymentMethod = order.querySelector('.payment-method')?.textContent.toLowerCase() || '';
+        const isGcash = paymentMethod.includes('gcash');
+        const isCOD = !isGcash;
+        
+        let shouldDisplay = false;
+        
+        switch(status) {
+            case 'all':
+                shouldDisplay = true;
+                break;
+            case 'needs-verification':
+                // Show only pending GCash payments
+                shouldDisplay = orderStatus === 'pending' && isGcash;
+                break;
+            case 'pending':
+                // Show only pending COD payments
+                shouldDisplay = orderStatus === 'pending' && isCOD;
+                break;
+            default:
+                // For preparing and out for delivery
+                shouldDisplay = orderStatus === status;
+        }
+        
+        order.style.display = shouldDisplay ? 'block' : 'none';
+    });
+
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+}
+
 // Set up event listeners when document is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Close modal when clicking the close button or outside
     document.querySelectorAll('.close, .close-modal').forEach(element => {
         element.addEventListener('click', () => {
             document.getElementById('paymentVerificationModal').style.display = 'none';
+        });
+    });
+
+    // Add filter button event listeners
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            filterOrders(button.dataset.status);
         });
     });
 
