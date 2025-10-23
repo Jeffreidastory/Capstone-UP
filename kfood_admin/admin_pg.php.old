@@ -2,312 +2,6 @@
 session_start();
 include "../connect.php";
 
-// Handle AJAX Restock Request
-if (isset($_POST['action']) && $_POST['action'] === 'restock_product' && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-    try {
-        // Validate inputs
-        $product_id = $_POST['product_id'] ?? null;
-        $restock_quantity = $_POST['restock_quantity'] ?? null;
-        $cost_per_unit = $_POST['cost_per_unit'] ?? null;
-        $expiration_date = $_POST['expiration_date'] ?? null;
-
-        if (!$product_id || !$restock_quantity || !$cost_per_unit || !$expiration_date) {
-            throw new Exception('All fields are required');
-        }
-        
-        // Calculate total stock for this product from restocking table
-        $total_query = $conn->prepare("SELECT COALESCE(SUM(restock_quantity), 0) as total_stock 
-                                     FROM restocking 
-                                     WHERE product_id = ?");
-        $total_query->bind_param("i", $product_id);
-        $total_query->execute();
-        $total_result = $total_query->get_result();
-        $total_row = $total_result->fetch_assoc();
-        $total_stock = floatval($total_row['total_stock']) + floatval($restock_quantity);
-
-        // Start transaction
-        $conn->begin_transaction();
-
-        // Get product details
-        $stmt = $conn->prepare("SELECT product_name, category_name, category_id, markup_value, image, unit_measurement FROM new_products WHERE id = ? FOR UPDATE");
-        if (!$stmt || !$stmt->bind_param("i", $product_id) || !$stmt->execute()) {
-            throw new Exception("Failed to fetch product details");
-        }
-
-        $result = $stmt->get_result();
-        $product = $result->fetch_assoc();
-        $stmt->close();
-
-        if (!$product) {
-            throw new Exception("Product not found");
-        }
-
-        // Get most recent unit cost and markup value for final price
-        $final_price = floatval($product['markup_value']) + floatval($cost_per_unit);
-
-        // Calculate total stock from all restocking records
-        $stock_query = $conn->prepare("SELECT COALESCE(SUM(restock_quantity), 0) as total_stock 
-                                    FROM restocking 
-                                    WHERE product_id = ?");
-        $stock_query->bind_param("i", $product_id);
-        $stock_query->execute();
-        $stock_result = $stock_query->get_result();
-        $stock_row = $stock_result->fetch_assoc();
-        $total_stock = floatval($stock_row['total_stock']) + floatval($restock_quantity);
-
-        // Check if product exists in products table
-        $check_stmt = $conn->prepare("SELECT id FROM products WHERE name = ?");
-        $check_stmt->bind_param("s", $product['product_name']);
-        $check_stmt->execute();
-        $existing_result = $check_stmt->get_result();
-
-        if($existing_result->num_rows > 0) {
-            // Get current stock before update for history
-            $current_stock = $total_stock - floatval($restock_quantity);
-            
-            // Always update both stock and price (use latest price)
-            $update_stmt = $conn->prepare("UPDATE products 
-                                     SET stock = ?,
-                                         price = ?, /* Always use latest final price */
-                                         category = ?,
-                                         category_id = ?,
-                                         image = ?,
-                                         uom = ?
-                                     WHERE name = ?");
-            $update_stmt->bind_param("ddsisss", 
-                $total_stock,
-                $final_price, /* Using latest final price */
-                $product['category_name'],
-                $product['category_id'],
-                $product['image'],
-                $product['unit_measurement'],
-                $product['product_name']
-            );
-            $update_stmt->execute();
-        } else {
-            // First time insertion
-            $current_stock = 0;
-            
-            // Insert new product with initial stock and price
-            $insert_stmt = $conn->prepare("INSERT INTO products 
-                (name, category, category_id, price, stock, image, uom) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $insert_stmt->bind_param("ssiidss",
-                $product['product_name'],
-                $product['category_name'],
-                $product['category_id'],
-                $final_price, /* Using initial final price */
-                $total_stock,
-                $product['image'],
-                $product['unit_measurement']
-            );
-            $insert_stmt->execute();
-        }
-
-        // Insert restock record
-        $stmt = $conn->prepare("INSERT INTO restocking 
-            (product_id, product_name, current_stock, restock_quantity, cost_per_unit, final_price, expiration_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)");
-            
-        if (!$stmt || !$stmt->bind_param("isiddds", 
-            $product_id, 
-            $product['product_name'],
-            $current_stock,
-            $restock_quantity,
-            $cost_per_unit,
-            $final_price,
-            $expiration_date
-        ) || !$stmt->execute()) {
-            throw new Exception("Failed to insert restock record");
-        }
-        $stmt->close();
-
-            // Function to deduct stock from nearest expiring batch
-            function deductFromNearestExpiring($conn, $product_id, $quantity_needed) {
-                // Get available stock batches ordered by expiration date
-                $stmt = $conn->prepare("
-                    SELECT id, restock_quantity as available_quantity, expiration_date 
-                    FROM restocking 
-                    WHERE product_id = ? 
-                    AND restock_quantity > 0 
-                    ORDER BY expiration_date ASC"
-                );
-                $stmt->bind_param("i", $product_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                $remaining = $quantity_needed;
-                $deductions = array();
-                
-                while($batch = $result->fetch_assoc()) {
-                    if ($remaining <= 0) break;
-                    
-                    $deduct = min($batch['available_quantity'], $remaining);
-                    $new_quantity = $batch['available_quantity'] - $deduct;
-                    
-                    // Update the batch quantity
-                    $update = $conn->prepare("
-                        UPDATE restocking 
-                        SET restock_quantity = ? 
-                        WHERE id = ?"
-                    );
-                    $update->bind_param("di", $new_quantity, $batch['id']);
-                    $update->execute();
-                    
-                    $remaining -= $deduct;
-                    $deductions[] = array(
-                        'batch_id' => $batch['id'],
-                        'deducted' => $deduct,
-                        'expiration_date' => $batch['expiration_date']
-                    );
-                }
-                
-                return $deductions;
-            }
-
-            // Update product stock and record history
-            $deductions = deductFromNearestExpiring($conn, $product_id, $restock_quantity);
-            
-            // Record in stock history
-            $stmt = $conn->prepare("
-                INSERT INTO stock_history 
-                (product_id, type, quantity, previous_stock, new_stock, expiration_batch) 
-                VALUES (?, 'stock_in', ?, ?, ?, ?)"
-            );
-            
-            foreach($deductions as $deduction) {
-                $stmt->bind_param("iddds", 
-                    $product_id, 
-                    $deduction['deducted'],
-                    $current_stock,
-                    $current_stock + $deduction['deducted'],
-                    $deduction['expiration_date']
-                );
-                $stmt->execute();
-            }
-            $stmt->close();        // Commit transaction
-        $conn->commit();
-
-        // Return success response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
-            'message' => 'Restock recorded successfully',
-            'product_name' => $product['product_name'],
-            'restock_quantity' => $restock_quantity . ' ' . $product['unit_measurement'],
-            'final_price' => number_format($final_price, 2)
-        ]);
-        exit;
-
-    } catch (Exception $e) {
-        if ($conn) $conn->rollback();
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        exit;
-    }
-}
-
-// Process Add Product Form
-if(isset($_POST['add_product'])) {
-    $product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
-    $markup_value = mysqli_real_escape_string($conn, $_POST['markup_value']);
-    $category_id = mysqli_real_escape_string($conn, $_POST['category']);
-    $unit_measurement = mysqli_real_escape_string($conn, $_POST['unit_measurement']);
-    
-    // Set initial stock to 0
-    $initial_stock = 0;
-
-    // Get category name
-    $category_query = "SELECT category_name FROM product_categories WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $category_query);
-    mysqli_stmt_bind_param($stmt, "i", $category_id);
-    mysqli_stmt_execute($stmt);
-    $category_result = mysqli_stmt_get_result($stmt);
-    $category_row = mysqli_fetch_assoc($category_result);
-    $category_name = $category_row['category_name'];
-
-    // Handle image upload
-    $image = $_FILES['product_image']['name'];
-    $image_tmp_name = $_FILES['product_image']['tmp_name'];
-    $image_folder = '../uploaded_img/';
-    
-    // Generate unique filename
-    $image_extension = pathinfo($image, PATHINFO_EXTENSION);
-    $unique_image_name = uniqid() . '.' . $image_extension;
-    $image_path = $image_folder . $unique_image_name;
-
-    // Validate image
-    $allowed_extensions = array('jpg', 'jpeg', 'png');
-    if(!in_array(strtolower($image_extension), $allowed_extensions)) {
-        echo "<script>
-            showNotification('Error', 'Invalid image format. Please use JPG, JPEG, or PNG.', 'error');
-        </script>";
-        exit();
-    }
-
-    // Insert product into database
-    $insert_query = "INSERT INTO new_products (product_name, markup_value, category_id, category_name, unit_measurement, image) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
-    
-    try {
-        $stmt = mysqli_prepare($conn, $insert_query);
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . mysqli_error($conn));
-        }
-        
-        if (!mysqli_stmt_bind_param($stmt, "sdisss", $product_name, $markup_value, $category_id, $category_name, $unit_measurement, $unique_image_name)) {
-            throw new Exception("Binding parameters failed: " . mysqli_stmt_error($stmt));
-        }
-        
-        if (!mysqli_stmt_execute($stmt)) {
-            throw new Exception("Execute failed: " . mysqli_stmt_error($stmt));
-        }
-        
-        move_uploaded_file($image_tmp_name, $image_path);
-        echo "<script>
-            showNotification('Success', 'Product added successfully!', 'success');
-            setTimeout(() => { window.location.href = 'admin_pg.php?section=menu-creation'; }, 1500);
-        </script>";
-    } catch (Exception $e) {
-        echo "<script>
-            showNotification('Error', '" . htmlspecialchars($e->getMessage()) . "', 'error');
-        </script>";
-    }
-}
-
-// Process Add Category
-if(isset($_POST['add_category'])) {
-    $category_name = mysqli_real_escape_string($conn, $_POST['category_name']);
-    
-    // Check if category already exists
-    $check_query = "SELECT id FROM product_categories WHERE category_name = ?";
-    $stmt = mysqli_prepare($conn, $check_query);
-    mysqli_stmt_bind_param($stmt, "s", $category_name);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    
-    if(mysqli_num_rows($result) > 0) {
-        echo "<script>
-            showNotification('Error', 'Category already exists!', 'error');
-        </script>";
-    } else {
-        $insert_query = "INSERT INTO product_categories (category_name) VALUES (?)";
-        $stmt = mysqli_prepare($conn, $insert_query);
-        mysqli_stmt_bind_param($stmt, "s", $category_name);
-        
-        if(mysqli_stmt_execute($stmt)) {
-            echo "<script>
-                showNotification('Success', 'Category added successfully!', 'success');
-                setTimeout(() => { window.location.href = 'admin_pg.php?section=menu-creation'; }, 1500);
-            </script>";
-        } else {
-            echo "<script>
-                showNotification('Error', 'Failed to add category. Please try again.', 'error');
-            </script>";
-        }
-    }
-}
-
 // Add stylesheet for notifications
 echo "<style>
     #notifHeader {
@@ -637,7 +331,26 @@ if(isset($_POST['createUser'])) {
 }
 
 // Menu Creation Functionality
-// Product management code removed
+if(isset($_POST['add_product'])){
+   $p_name = $_POST['p_name'];
+   $p_category = $_POST['p_category'];
+   $p_price = $_POST['p_price'];
+   $p_stock = $_POST['p_stock'];
+   $p_uom = $_POST['p_umo'];
+   $p_expiry = $_POST['p_expiry'];
+   $p_image = $_FILES['p_image']['name'];
+   $p_image_tmp_name = $_FILES['p_image']['tmp_name'];
+   $p_image_folder = '../uploaded_img/'.$p_image;
+
+   $insert_query = mysqli_query($conn, "INSERT INTO `products`(name, category, price, stock, uom, expiry_date, image) VALUES('$p_name', '$p_category', '$p_price', '$p_stock', '$p_uom', '$p_expiry', '$p_image')") or die('query failed');
+
+   if($insert_query){
+      move_uploaded_file($p_image_tmp_name, $p_image_folder);
+      $message[] = 'product added successfully';
+   }else{
+      $message[] = 'could not add the product';
+   }
+}
 
 if(isset($_GET['delete'])){
    $delete_id = $_GET['delete'];
@@ -718,6 +431,8 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/inventory-dark.css">
     <link rel="stylesheet" href="css/table-dark.css">
     <link rel="stylesheet" href="css/role-features.css">
+    <link rel="stylesheet" href="css/menu-creation-enhanced.css">
+    <link rel="stylesheet" href="css/add-product-form.css">
     <link rel="stylesheet" href="css/inventory-stats.css">
     <link rel="stylesheet" href="css/theme-variables.css">
     <link rel="stylesheet" href="css/dark-mode-components.css">
@@ -733,897 +448,90 @@ if ($_SESSION['role_id'] == 1) {
     <link rel="stylesheet" href="css/adm-style.css">
     <link rel="stylesheet" href="css/admin-enhanced.css">
     <script src="js/notifications.js"></script>
-    <script>
-        // Filter functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const productFilter = document.getElementById('productFilter');
-            if (productFilter) {
-                productFilter.addEventListener('change', function() {
-                    const selectedProduct = this.value;
-                    const rows = document.querySelectorAll('.restock-table tbody tr');
-                    
-                    rows.forEach(row => {
-                        const productCell = row.querySelector('td:nth-child(2)');
-                        if (!productCell) return; // Skip if no product cell (like in "no records" row)
-                        
-                        if (!selectedProduct || productCell.textContent.trim() === selectedProduct) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                });
-            }
-        });
-
-        function updateRestockTable(newRecord) {
-            const table = document.querySelector('.restock-table tbody');
-            if (!table) return;
-
-            // Remove "No records" message if it exists
-            if (table.innerHTML.includes('No restocking records found')) {
-                table.innerHTML = '';
-            }
-
-            // Create new row
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${newRecord.date}</td>
-                <td>${newRecord.product_name}</td>
-                <td>${newRecord.restock_quantity}</td>
-                <td>₱${parseFloat(newRecord.cost_per_unit).toFixed(2)}</td>
-                <td>₱${parseFloat(newRecord.final_price).toFixed(2)}</td>
-                <td>${newRecord.expiration_date}</td>
-            `;
-
-            // Insert at the top of the table
-            table.insertBefore(row, table.firstChild);
-        }
-
-        async // Function to update stock with FIFO method
-function updateStockFIFO(productId, quantity, conn) {
-    // Get restocking records ordered by expiration date (oldest first)
-    $stmt = $conn->prepare("
-        SELECT id, product_id, restock_quantity, current_stock, expiration_date 
-        FROM restocking 
-        WHERE product_id = ? AND restock_quantity > 0 
-        ORDER BY expiration_date ASC"
-    );
-    $stmt->bind_param("i", $productId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $remainingQuantity = $quantity;
-    $updates = [];
-    
-    while($row = $result->fetch_assoc() && $remainingQuantity > 0) {
-        $availableQuantity = $row['restock_quantity'];
-        $deductQuantity = min($availableQuantity, $remainingQuantity);
-        
-        // Update restocking record
-        $newQuantity = $availableQuantity - $deductQuantity;
-        $updates[] = [
-            'id' => $row['id'],
-            'quantity' => $newQuantity
-        ];
-        
-        $remainingQuantity -= $deductQuantity;
-    }
-    
-    // Apply updates
-    foreach($updates as $update) {
-        $stmt = $conn->prepare("
-            UPDATE restocking 
-            SET restock_quantity = ? 
-            WHERE id = ?"
-        );
-        $stmt->bind_param("ii", $update['quantity'], $update['id']);
-        $stmt->execute();
-    }
-    
-    // Update total stock in products table
-    $stmt = $conn->prepare("
-        UPDATE products 
-        SET stock = stock - ? 
-        WHERE id = ?"
-    );
-    $stmt->bind_param("ii", $quantity, $productId);
-    $stmt->execute();
-    
-    // Record in stock history
-    $stmt = $conn->prepare("
-        INSERT INTO stock_history (product_id, type, quantity, date) 
-        VALUES (?, 'deduct', ?, NOW())"
-    );
-    $stmt->bind_param("ii", $productId, $quantity);
-    $stmt->execute();
-}
-
-function submitRestock(event) {
-            event.preventDefault();
-            
-            try {
-                const form = event.target;
-                const formData = new FormData();
-                
-                // Get form values
-                const product = document.getElementById('product');
-                const quantity = document.getElementById('quantity');
-                const unitCost = document.getElementById('unitCost');
-                const expirationDate = document.getElementById('expirationDate');
-                
-                // Validate input
-                if (!product.value || !quantity.value || !unitCost.value || !expirationDate.value) {
-                    throw new Error('Please fill in all fields');
-                }
-                if (parseFloat(quantity.value) <= 0) {
-                    throw new Error('Quantity must be greater than 0');
-                }
-                if (parseFloat(unitCost.value) <= 0) {
-                    throw new Error('Unit cost must be greater than 0');
-                }
-                const selectedDate = new Date(expirationDate.value);
-                if (selectedDate <= new Date()) {
-                    throw new Error('Expiration date must be in the future');
-                }
-                
-                formData.append('product_id', product.value);
-                formData.append('restock_quantity', quantity.value);
-                formData.append('cost_per_unit', unitCost.value);
-                formData.append('expiration_date', expirationDate.value);
-                formData.append('action', 'restock_product');
-                
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const data = await response.json();
-            
-                if (data.success) {
-                    // Create record for the table with data from server
-                    const newRecord = {
-                        date: new Date().toLocaleString(),
-                        product_name: data.product_name,
-                        restock_quantity: data.restock_quantity,
-                        cost_per_unit: unitCost.value,
-                        final_price: data.final_price,
-                        expiration_date: new Date(expirationDate.value).toLocaleDateString()
-                    };
-
-                    // Update the table with the new record
-                    updateRestockTable(newRecord);
-
-                    // Show success notification
-                    const successMsg = document.createElement('div');
-                    successMsg.className = 'notification-toast success';
-                    successMsg.innerHTML = `
-                        <div class="notification-content">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <div class="notification-title">Success</div>
-                                <div class="notification-message">${data.message}</div>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(successMsg);
-
-                    // Animate notification in
-                    setTimeout(() => successMsg.classList.add('show'), 100);
-                    
-                    // Remove notification after delay
-                    setTimeout(() => {
-                        successMsg.classList.remove('show');
-                        setTimeout(() => successMsg.remove(), 300);
-                    }, 3000);
-
-                    // Reset form with smooth animation
-                    form.classList.add('form-reset');
-                    setTimeout(() => {
-                        form.reset();
-                        form.classList.remove('form-reset');
-                    }, 300);
-                } else {
-                    throw new Error(data.message || 'Failed to record restock');
-                }
-                
-                return false;
-            } catch (error) {
-                console.error('Error submitting form:', error);
-                
-                // Show error notification
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'notification-toast error';
-                errorMsg.innerHTML = `
-                    <div class="notification-content">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <div>
-                            <div class="notification-title">Error</div>
-                            <div class="notification-message">${error.message}</div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(errorMsg);
-
-                // Animate notification in
-                setTimeout(() => errorMsg.classList.add('show'), 100);
-                
-                // Remove notification after delay
-                setTimeout(() => {
-                    errorMsg.classList.remove('show');
-                    setTimeout(() => errorMsg.remove(), 300);
-                }, 3000);
-                
-                return false;
-            }
-        }
-    </script>
-    <style>
-        /* Notification Toast Styles */
-        .notification-toast {
-            position: fixed;
-            top: 20px;
-            right: -300px; /* Start off-screen */
-            width: 280px;
-            padding: 15px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s ease-out;
-            z-index: 1000;
-        }
-
-        [data-theme="dark"] .notification-toast {
-            background: #2a2d3a;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .notification-toast.show {
-            transform: translateX(-320px);
-        }
-
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .notification-content i {
-            font-size: 20px;
-        }
-
-        .notification-toast.success i {
-            color: #4CAF50;
-        }
-
-        .notification-toast.error i {
-            color: #f44336;
-        }
-
-        .notification-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #1a1a1a;
-        }
-
-        [data-theme="dark"] .notification-title {
-            color: #ffffff;
-        }
-
-        .notification-message {
-            font-size: 0.9em;
-            color: #666666;
-        }
-
-        [data-theme="dark"] .notification-message {
-            color: #b0b0b0;
-        }
-
-        /* Form Reset Animation */
-        .form-reset {
-            opacity: 0.5;
-            transform: scale(0.98);
-            transition: all 0.3s ease;
-        }
-
-        /* Base Styles */
-        body {
-            overflow-x: hidden;
-        }
-
-        /* Critical Layout Fixes */
-        .main-content {
-            margin-left: 250px;
-            width: calc(100% - 250px);
-            padding: 20px;
-            overflow-x: hidden;
-            box-sizing: border-box;
-        }
-
-        .content-wrapper {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            justify-content: flex-start;
-        }
-
-        /* Dashboard and Inventory Width Fixes */
-        #dashboard-section,
-        .inventory-section,
-        .stats-container,
-        .charts-container,
-        .table-responsive,
-        .product-inventory {
-            width: 100% !important;
-            max-width: none !important;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            box-sizing: border-box !important;
-        }
-
-        /* Stats Cards Grid */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            padding: 0;
-        }
-
-        /* Charts Container */
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            padding: 0;
-        }
-
-        /* Inventory Table */
-        .table-responsive {
-            overflow-x: auto;
-            margin: 0;
-            padding: 0;
-        }
-
-        .main-content > .header-content,
-        .main-content > h2 {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--bg-primary);
-            margin: 0;
-            padding: 1.5rem 2rem;
-            width: 100%;
-            box-sizing: border-box;
-            border-bottom: 1px solid rgba(255, 127, 80, 0.1);
-        }
-
-        /* Product Inventory Search and Filters */
-        .search-container,
-        .filter-container {
-            width: 100%;
-            margin-bottom: 1rem;
-        }
-
-        /* Product Table */
-        .product-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        #landing-settings-section,
-        #user-roles-section,
-        #user-accounts-section,
-        #orders-section,
-        .section-container {
-            margin-top: 2rem !important;
-            padding: 2rem !important;
-            width: 100% !important;
-            max-width: 1600px !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            box-sizing: border-box !important;
-            position: relative !important;
-        }
-
-        .section-wrapper {
-            padding: 2rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        [data-theme="dark"] .main-content > .header-content,
-        [data-theme="dark"] .main-content > h2 {
-            background: #1a1c23;
-            border-bottom-color: rgba(255, 255, 255, 0.1);
-        }
-    </style>
-    <script src="js/products-menu.js"></script>
     <link rel="stylesheet" href="css/enhanced-notifications.css">
-    <script>
-        // Image Preview
-        document.getElementById('product_image').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById('imagePreview');
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Category Modal
-        function showAddCategoryModal() {
-            // Create modal HTML
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Add New Category</h3>
-                        <span class="close">&times;</span>
-                    </div>
-                    <form id="categoryForm" method="POST">
-                        <div class="form-group">
-                            <label for="category_name">Category Name</label>
-                            <input type="text" id="category_name" name="category_name" required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" name="add_category" class="btn btn-primary">
-                                <i class="fas fa-plus-circle"></i> Add Category
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            // Add modal to body
-            document.body.appendChild(modal);
-
-            // Close modal functionality
-            const closeBtn = modal.querySelector('.close');
-            closeBtn.onclick = function() {
-                modal.remove();
-            }
-
-            // Close modal when clicking outside
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    modal.remove();
-                }
-            }
-        }
-    </script>
     <link rel="stylesheet" href="css/edit-form.css">
-    <link rel="stylesheet" href="css/restock.css">
     <link rel="stylesheet" href="css/sidebar-enhanced.css">
     <link rel="stylesheet" href="css/user-roles.css">
-    <link rel="stylesheet" href="css/products-menu.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Layout Structure */
-        .admin-layout {
+        /* Category Management Styles */
+        .category-select-container {
             display: flex;
-            min-height: 100vh;
-            width: 100%;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        .admin-sidebar {
-            position: fixed;
-            width: 240px;
-            height: 100vh;
-            left: 0;
-            top: 0;
-            z-index: 100;
-            background: #1a1c23;
-        }
-
-        /* Section and Container Fixes */
-        #landing-settings-section,
-        #user-roles-section,
-        #user-accounts-section,
-        #orders-section,
-        .section-container {
-            width: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-            position: relative;
-            overflow: visible;
-            box-sizing: border-box;
-        }
-
-        /* Main Content Wrapper Fix */
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-            padding: 2rem;
-            width: calc(100% - 240px);
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        /* Section and Container Styles */
-        .menu-creation-container,
-        .section-container {
-            position: relative;
-            width: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: #ffffff;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box;
-        }
-
-        [data-theme="dark"] .menu-creation-container,
-        [data-theme="dark"] .section-container {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Section Layout */
-        #landing-settings-section,
-        #user-roles-section,
-        #user-accounts-section,
-        #orders-section,
-        #products-section {
-            width: 100%;
-            margin-bottom: 2rem;
-        }
-
-        /* Content Layout */
-        .content-wrapper {
-            width: 100%;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        /* Table Container */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border-radius: 8px;
-            background: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        [data-theme="dark"] .table-responsive {
-            background: #32364a;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Section Header */
-        .section-header {
-            display: flex;
+            gap: 10px;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        [data-theme="dark"] .section-header {
-            border-bottom-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Form Layout Styles */
-        .form-container {
-            width: 100%;
-            max-width: 100%;
-            margin: 0 auto;
-            box-sizing: border-box;
-        }
-
-        .form-section {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        [data-theme="dark"] .form-section {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-row {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        @media screen and (max-width: 1024px) {
-            .form-row {
-                flex-direction: column;
-            }
-        }
-
-        .add-product-layout {
-            width: 100%;
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .add-product-form {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-row-landscape {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
-            width: 100%;
-        }
-
-        .input-group {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .input-group.full-width {
-            flex: 1;
-            width: 100%;
-        }
-
-        .upload-section {
-            margin-top: 1.5rem;
-        }
-
-        [data-theme="dark"] .add-product-form {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-header {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .form-header h2 {
-            color: #FF7F50;
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .form-content {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            flex: 1;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        [data-theme="dark"] .form-group label {
-            color: #ffffff;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        [data-theme="dark"] .form-group input,
-        [data-theme="dark"] .form-group select {
-            background: #32364a;
-            border-color: #454b60;
-            color: #ffffff;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #FF7F50;
-            box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.2);
-        }
-
-        .category-select-wrapper {
-            display: flex;
-            gap: 0.5rem;
         }
 
         .add-category-btn {
             background: #FF7F50;
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .add-category-btn:hover {
             background: #ff6b3d;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
-        .file-input-container {
-            border: 2px dashed #ddd;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        [data-theme="dark"] .file-input-container {
-            border-color: #454b60;
-        }
-
-        .file-input-container:hover {
-            border-color: #FF7F50;
-        }
-
-        .file-input-ui {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .file-input-ui i {
-            font-size: 2rem;
-            color: #FF7F50;
-        }
-
-        .image-preview {
-            margin-top: 1rem;
-            max-width: 200px;
-            margin: 1rem auto 0;
-        }
-
-        .image-preview img {
+        #addCategoryModal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
             width: 100%;
-            height: auto;
-            border-radius: 8px;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
         }
 
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 2rem;
-        }
-
-        .btn-primary {
-            background: #FF7F50;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: #ff6b3d;
-            transform: translateY(-2px);
-        }
-
-        /* Product Cards Grid */
-        .product-cards-container {
-            margin-top: 3rem;
-        }
-
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .product-card {
+        .category-modal-content {
             background: #ffffff;
+            margin: 15% auto;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
 
-        [data-theme="dark"] .product-card {
+        [data-theme="dark"] .category-modal-content {
             background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        .category-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .product-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
+        [data-theme="dark"] .category-modal-header {
+            border-bottom-color: rgba(255,255,255,0.1);
         }
 
-        .product-details {
-            padding: 1.5rem;
-        }
-
-        .product-details h3 {
-            margin: 0 0 0.5rem 0;
-            color: #333;
-            font-size: 1.2rem;
+        .category-modal-header h3 {
+            color: #1a1a1a;
+            font-size: 20px;
             font-weight: 600;
+            margin: 0;
         }
 
-        [data-theme="dark"] .product-details h3 {
+        [data-theme="dark"] .category-modal-header h3 {
             color: #ffffff;
         }
-
-        .product-details p {
-            margin: 0.25rem 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        [data-theme="dark"] .product-details p {
-            color: #b0b0b0;
-        }
-
-        .category {
-            color: #FF7F50 !important;
-            font-weight: 500;
-        }
-
-        .markup {
-            font-weight: 600;
-        }
-
 
         /* Modal Styles */
         .modal {
@@ -1736,14 +644,6 @@ function submitRestock(event) {
         }
 
         /* User Accounts Table Styles */
-        .table-responsive {
-            overflow-x: auto;
-            max-width: 100%;
-            margin: 1rem 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
         .user-accounts-table {
             width: 100%;
             border-collapse: collapse;
@@ -1752,7 +652,6 @@ function submitRestock(event) {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             overflow: hidden;
-            min-width: 800px; /* Ensures table doesn't get too squished */
         }
         
         .user-accounts-table th {
@@ -1762,7 +661,6 @@ function submitRestock(event) {
             padding: 12px;
             text-align: left;
             border-bottom: 2px solid #e5e7eb;
-            white-space: nowrap;
         }
         
         .user-accounts-table td {
@@ -1773,13 +671,6 @@ function submitRestock(event) {
         
         .user-accounts-table tr:hover {
             background-color: #f9fafb;
-        }
-
-        /* Wrapper to prevent horizontal overflow */
-        .content-wrapper {
-            max-width: 100%;
-            overflow-x: hidden;
-            padding: 0 1rem;
         }
         
         [data-theme="dark"] .user-accounts-table {
@@ -2026,39 +917,22 @@ function submitRestock(event) {
             vertical-align: middle;
         }
         
-        .inventory-table td:nth-child(5) { /* UOM column */
+        .expiry-warning {
+            color: #e53e3e;
+            font-weight: 500;
+        }
+        
+        [data-theme="dark"] .expiry-warning {
+            color: #fc8181;
+        }
+        
+        .inventory-table td:nth-child(5), /* UOM column */
+        .inventory-table td:nth-child(6) { /* Expiration date column */
             font-size: 0.9rem;
         }
 
         .inventory-table tbody tr:hover {
             background-color: #f7fafc;
-        }
-
-        /* Filter Styles */
-        .filter-container {
-            margin: 1rem 0;
-        }
-
-        .filter-select {
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            min-width: 200px;
-            background-color: #ffffff;
-            color: #2d3748;
-            font-size: 0.9rem;
-        }
-
-        [data-theme="dark"] .filter-select {
-            background-color: #2a2d3a;
-            border-color: #4a5568;
-            color: #e2e8f0;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: #FF7F50;
-            box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.2);
         }
 
         .inventory-table img {
@@ -2095,7 +969,15 @@ function submitRestock(event) {
             color: #c53030;
         }
 
+        .expiry-date {
+            color: #718096;
+            font-size: 0.9rem;
+        }
 
+        .expiry-warning {
+            color: #c53030;
+            font-weight: 500;
+        }
 
         .uom-badge {
             background: #e2e8f0;
@@ -2204,21 +1086,6 @@ function submitRestock(event) {
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
             padding: 20px;
-            max-width: 100%;
-            margin: 0 auto;
-            overflow: hidden;
-        }
-
-        @media screen and (max-width: 1200px) {
-            .roles-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media screen and (max-width: 768px) {
-            .roles-grid {
-                grid-template-columns: 1fr;
-            }
         }
 
         .feature-check {
@@ -2230,192 +1097,21 @@ function submitRestock(event) {
             color: #34D399;
         }
 
-        /* Reset and Global Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Global Styles */
         body {
             background-color: #f8f9fa;
             color: #333;
-            overflow-x: hidden;
-            min-height: 100vh;
-            display: flex;
         }
 
         [data-theme="dark"] body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
         }
-
-        /* Layout Structure */
-        .admin-container {
-            display: flex;
-            width: 100%;
-            min-height: 100vh;
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-            width: 240px;
-            min-height: 100vh;
-            background: #1a1c23;
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        /* Main Content Area */
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-            padding: 2rem;
-            width: calc(100% - 240px);
-            min-height: 100vh;
-            background: #f8f9fa;
-            position: relative;
-        }
-
-        [data-theme="dark"] .main-content {
-            background: var(--bg-primary);
-        }
-
-        /* Section Container */
-        .section-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 1rem;
-            width: 100%;
-        }
-
-        /* Content Grid Layout */
-        .content-grid {
-            display: grid;
-            gap: 2rem;
-            width: 100%;
-            max-width: 100%;
-        }
-
-        /* Main Content Container Styles */
-        .main-content {
-            position: relative;
-            padding: 2rem;
-            margin-left: 240px; /* Sidebar width */
-            width: calc(100% - 240px);
-            box-sizing: border-box;
-            min-height: 100vh;
-        }
-
-        /* Header Spacing Fix */
-        .main-content > h2,
-        .main-content > .header-content {
-            margin-bottom: 2rem;
-            padding: 1rem 2rem;
-            background: var(--bg-primary);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        /* Section Container Styles */
-        #landing-settings-section,
-        #user-roles-section,
-        #user-accounts-section,
-        #orders-section {
-            position: relative;
-            width: 100%;
-            max-width: 1600px; /* Maximum width for large screens */
-            padding: 2rem;
-            margin: 2rem auto 0; /* Added top margin */
-            box-sizing: border-box;
-        }
-
-        /* Wrapper for all sections */
-        .section-wrapper {
-            position: relative;
-            width: 100%;
-            padding: 0 1rem;
-            box-sizing: border-box;
-        }
-
-        .section-container {
-            position: relative;
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Card Container for Landing Settings and Hero Section */
-        .branding-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .branding-card {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Image upload containers */
-        .image-upload-container {
-            width: 100%;
-            max-width: 100%;
-            margin: 1rem 0;
-            box-sizing: border-box;
-        }
-
-        .drop-zone {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        [data-theme="dark"] .section-container,
-        [data-theme="dark"] .branding-card {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Responsive adjustments */
-        @media screen and (max-width: 1400px) {
-            .main-content {
-                padding: 1.5rem;
-            }
-            .section-container {
-                padding: 1.5rem;
-            }
-        }
-
-        @media screen and (max-width: 1024px) {
-            .branding-container {
-                grid-template-columns: 1fr;
-            }
-        }
         
         /* Sidebar and Menu Item Styles */
         .menu-item {
             position: relative;
             transition: all 0.3s ease;
-            width: 100%;
         }
 
         .menu-item.active {
@@ -2430,67 +1126,6 @@ function submitRestock(event) {
             height: 100%;
             width: 4px;
             background: #FF7F50;
-        }
-
-        /* Submenu Styles */
-        .submenu {
-            padding-left: 2.5rem;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-
-        .menu-item.expanded .submenu {
-            max-height: 500px;
-            transition: max-height 0.3s ease-in;
-        }
-
-        .submenu-item {
-            padding: 0.75rem 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .submenu-item:hover {
-            color: #FF7F50;
-            background: rgba(255, 127, 80, 0.1);
-        }
-
-        .submenu-item.active {
-            color: #FF7F50;
-            background: rgba(255, 127, 80, 0.15);
-        }
-
-        /* Menu Toggle Button */
-        .menu-toggle {
-            padding: 0.75rem 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            color: rgba(255, 255, 255, 0.8);
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .menu-toggle:hover {
-            background: rgba(255, 127, 80, 0.1);
-            color: #FF7F50;
-        }
-
-        .menu-toggle i {
-            transition: transform 0.3s ease;
-        }
-
-        .menu-item.expanded .menu-toggle i {
-            transform: rotate(180deg);
         }
 
         .menu-item.active a {
@@ -2527,7 +1162,412 @@ function submitRestock(event) {
             font-family: 'Inter', sans-serif;
         }
 
+        /* Enhanced Menu Creation Styles */
+        .menu-creation-container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+        }
 
+        .add-product-form {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(238, 240, 245, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .add-product-form:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="dark"] .add-product-form {
+            background: #2a2d3a;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f5;
+        }
+
+        [data-theme="dark"] .form-header {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .form-header h2 {
+            color: #ffffff;
+        }
+
+        .form-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        [data-theme="dark"] .form-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-content {
+            padding: 1.5rem 0;
+        }
+
+        .form-section {
+            margin-bottom: 2.5rem;
+            padding: 2rem;
+            background: rgba(255, 127, 80, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 127, 80, 0.1);
+            box-shadow: 0 2px 6px rgba(255, 127, 80, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .form-section:hover {
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .form-section h3 {
+            color: #FF7F50;
+            font-size: 1.25rem;
+            margin-bottom: 1.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .form-section h3::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: #FF7F50;
+            border-radius: 2px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-row.two-columns {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .form-row.three-columns {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .form-row.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            flex: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            width: 100%;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #1a1a1a;
+            font-weight: 600;
+            font-size: 0.925rem;
+        }
+
+        .form-group label i {
+            color: #FF7F50;
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        [data-theme="dark"] .form-group label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: #333;
+            background: #ffffff;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .form-group input:hover,
+        .form-group select:hover {
+            border-color: #FF7F50;
+            background: rgba(255, 127, 80, 0.01);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #FF7F50;
+            box-shadow: 0 0 0 4px rgba(255, 127, 80, 0.1);
+            outline: none;
+            background: #ffffff;
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+            font-size: 0.925rem;
+        }
+
+        .form-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #666;
+            margin-top: 0.75rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-subtitle i {
+            color: #FF7F50;
+            font-size: 1.1rem;
+        }
+
+        .form-header {
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 127, 80, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-header h2 {
+            color: #FF7F50;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+        }
+
+        .file-input-container {
+            border: 2px dashed #FF7F50;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            background: rgba(255, 127, 80, 0.02);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-input-container:hover {
+            background: rgba(255, 127, 80, 0.05);
+            border-color: #ff6b3d;
+        }
+
+        .file-input-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-input-ui i {
+            font-size: 2.5rem;
+            color: #FF7F50;
+        }
+
+        .file-input-ui span {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .file-input-ui small {
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        [data-theme="dark"] .form-section {
+            background: rgba(255, 127, 80, 0.03);
+        }
+
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group select {
+            background: #2a2d3a;
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        [data-theme="dark"] .file-input-container {
+            background: rgba(255, 127, 80, 0.05);
+        }
+
+        [data-theme="dark"] .file-input-ui span {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        [data-theme="dark"] .file-input-ui small {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group select {
+            background: #32364a;
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #FF7F50;
+            box-shadow: 0 0 0 3px rgba(255, 127, 80, 0.1);
+            outline: none;
+        }
+
+        .image-upload-group {
+            grid-column: span 2;
+        }
+
+        .file-input-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .file-input-container input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-input-ui {
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            background: #f8f9fa;
+        }
+
+        [data-theme="dark"] .file-input-ui {
+            background: #32364a;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-input-ui i {
+            font-size: 2rem;
+            color: #FF7F50;
+            margin-bottom: 1rem;
+        }
+
+        .file-input-ui span {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .file-input-ui span {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .file-input-ui small {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        [data-theme="dark"] .file-input-ui small {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .file-input-container:hover .file-input-ui {
+            border-color: #FF7F50;
+            background: rgba(255, 127, 80, 0.05);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eef0f5;
+        }
+
+        [data-theme="dark"] .form-actions {
+            border-top-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn i {
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #FF7F50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b3d;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 127, 80, 0.2);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            background: #32364a;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        [data-theme="dark"] .btn-secondary:hover {
+            background: #3a3f56;
+        }
 
         /* Dashboard Styles */
         .stats-container {
@@ -2918,27 +1958,12 @@ function submitRestock(event) {
             font-size: 0.9rem;
         }
 
-        .orders-section-container {
-            max-width: 100%;
-            overflow-x: hidden;
-            padding: 1rem;
-        }
-
         .dashboard-orders-table {
             width: 100%;
             border-collapse: collapse;
             background-color: var(--bg-primary);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 800px; /* Prevents table from becoming too narrow */
-        }
-
-        .orders-table-wrapper {
-            max-width: 100%;
-            overflow-x: auto;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin: 1rem 0;
         }
 
         .dashboard-orders-table th,
@@ -3022,278 +2047,6 @@ function submitRestock(event) {
         .dashboard-orders-table .status-badge.cancelled {
             background: #f8d7da;
             color: #721c24;
-        }
-
-        /* Restocking Styles */
-        .restocking-container {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .restock-modal-content {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        [data-theme="dark"] .restock-modal-content {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .restock-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #eef0f5;
-        }
-
-        .restock-header h2 {
-            color: #FF7F50;
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            background: rgba(255, 127, 80, 0.1);
-            color: #FF7F50;
-        }
-
-        .restock-form .form-row {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .restock-form .form-group {
-            flex: 1;
-        }
-
-        .restock-form label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        [data-theme="dark"] .restock-form label {
-            color: #ffffff;
-        }
-
-        .restock-form input,
-        .restock-form select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        [data-theme="dark"] .restock-form input,
-        [data-theme="dark"] .restock-form select {
-            background: #32364a;
-            border-color: #454b60;
-            color: #ffffff;
-        }
-
-        .stock-info {
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        [data-theme="dark"] .stock-info {
-            color: #b0b0b0;
-        }
-
-        .uom-display {
-            margin-left: 0.5rem;
-            color: #666;
-        }
-
-        .expiration-warning {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 0.25rem;
-        }
-
-        .expiration-status {
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
-
-        .expiration-status.good {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .expiration-status.warning {
-            background: #fff3e0;
-            color: #ef6c00;
-        }
-
-        .restock-records {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        [data-theme="dark"] .restock-records {
-            background: #2a2d3a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .records-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .records-header h3 {
-            color: #333;
-            font-size: 1.4rem;
-            margin: 0;
-        }
-
-        [data-theme="dark"] .records-header h3 {
-            color: #ffffff;
-        }
-
-        .restock-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .restock-table th,
-        .restock-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #eef0f5;
-        }
-
-        .restock-table th {
-            font-weight: 600;
-            color: #333;
-            background: #f8f9fa;
-        }
-
-        [data-theme="dark"] .restock-table th {
-            background: #32364a;
-            color: #ffffff;
-            border-bottom-color: #454b60;
-        }
-
-        [data-theme="dark"] .restock-table td {
-            border-bottom-color: #454b60;
-            color: #ffffff;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-badge.status-pending {
-            background: #fff3e0;
-            color: #ef6c00;
-        }
-
-        .status-badge.status-completed {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .status-badge.status-cancelled {
-            background: #ffebee;
-            color: #c62828;
-        }
-
-        /* Notification Styles */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 4px;
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideIn 0.5s ease-out;
-            max-width: 350px;
-        }
-
-        .notification.success {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .notification.error {
-            background-color: #f44336;
-            color: white;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .notification-icon {
-            font-size: 20px;
-        }
-
-        .notification-message {
-            flex-grow: 1;
-            font-size: 14px;
-        }
-
-        .notification-close {
-            background: none;
-            border: none;
-            color: currentColor;
-            padding: 0;
-            cursor: pointer;
-            font-size: 20px;
-            opacity: 0.8;
-        }
-
-        .notification-close:hover {
-            opacity: 1;
         }
 
         @media (max-width: 1200px) {
@@ -4304,31 +3057,12 @@ function submitRestock(event) {
                     <span>User Accounts</span>
                 </a>
             </li>
-            <li class="menu-item" id="products-item">
-                <a href="#" onclick="toggleProductsMenu(event)">
-                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <i class="fas fa-utensils"></i>
-                            <span>Products</span>
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
+            <li class="menu-item" id="menu-creation-item">
+                <a href="#" data-section="menu-creation">
+                    <i class="fas fa-utensils"></i>
+                    <span>Products</span>
                 </a>
             </li>
-            <div class="submenu-items" style="display: none;">
-                <li class="menu-item submenu-item">
-                    <a href="#" data-section="menu-creation" style="padding-left: 3.5rem;">
-                        <i class="fas fa-plus"></i>
-                        <span>Add Products</span>
-                    </a>
-                </li>
-                <li class="menu-item submenu-item">
-                    <a href="#" data-section="restocking" style="padding-left: 3.5rem;">
-                        <i class="fas fa-box"></i>
-                        <span>Restocking</span>
-                    </a>
-                </li>
-            </div>
 
             <div class="menu-separator"></div>
 
@@ -4343,7 +3077,7 @@ function submitRestock(event) {
             <li class="menu-item" id="reports-item">
                 <a href="#" data-section="reports">
                     <i class="fas fa-chart-line"></i>
-                    <span>Sales Report</span>
+                    <span>Reports</span>
                 </a>
             </li>
             <li class="menu-item" id="orders-item">
@@ -4365,40 +3099,13 @@ function submitRestock(event) {
         </ul>
     </div>
     <div id="pageOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 999;"></div>
-    <?php
-    // Section handling
-    $current_section = isset($_GET['section']) ? $_GET['section'] : 'dashboard';
-    $section_titles = [
-        'dashboard' => 'Dashboard',
-        'inventory' => 'Inventory',
-        'menu-creation' => 'Menu Creation',
-        'orders' => 'Orders',
-        'accounts' => 'User Accounts',
-        'user-roles' => 'User Roles',
-        'sales-report' => 'Sales Report'
-    ];
-    $section_title = isset($section_titles[$current_section]) ? $section_titles[$current_section] : '';
-    
-    // Set section icon
-    $section_icons = [
-        'dashboard' => 'fas fa-chart-pie',
-        'inventory' => 'fas fa-box',
-        'menu-creation' => 'fas fa-utensils',
-        'orders' => 'fas fa-shopping-cart',
-        'user-accounts' => 'fas fa-users',
-        'user-roles' => 'fas fa-user-tag',
-        'sales-report' => 'fas fa-chart-line'
-    ];
-    $section_icon = isset($section_icons[$current_section]) ? $section_icons[$current_section] : 'fas fa-question';
-    ?>
     <div class="main-content" id="mainContent">
-        <div class="content-wrapper">
-            <header class="main-header">
-                <div class="header-content">
+        <header class="main-header">
+            <div class="header-content">
                 <div class="header-left">
                     <div class="header-title" id="section-title">
-                        <i class="<?php echo $section_icon; ?> dashboard-icon"></i>
-                        <h1><?php echo $section_title; ?></h1>
+                        <i class="fas fa-chart-pie dashboard-icon"></i>
+                        <h1>Dashboard</h1>
                     </div>
                 </div>
                 <div class="search-container">
@@ -4451,27 +3158,11 @@ function submitRestock(event) {
             </div>
         </header>
 
-        <script>
-            // Handle section visibility
-            document.addEventListener('DOMContentLoaded', function() {
-                const currentSection = '<?php echo $current_section; ?>';
-                // Hide all sections first
-                document.querySelectorAll('.content-section').forEach(section => {
-                    section.classList.add('hidden');
-                });
-                // Show the current section
-                const activeSection = document.getElementById(currentSection + '-section');
-                if (activeSection) {
-                    activeSection.classList.remove('hidden');
-                }
-            });
-        </script>
-
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
             <!-- Statistics Cards -->
             <div class="stats-container">
-                <div class="stat-card" onclick="window.location.href='admin_pg.php?section=menu-creation'" style="cursor: pointer;">
+                <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-utensils"></i>
                     </div>
@@ -4489,7 +3180,7 @@ function submitRestock(event) {
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="window.location.href='admin_pg.php?section=reports'" style="cursor: pointer;">
+                <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-peso-sign"></i>
                     </div>
@@ -4499,7 +3190,7 @@ function submitRestock(event) {
                         $revenue = mysqli_fetch_assoc($total_revenue)['total'] ?? 0;
                         ?>
                         <h3>₱<?php echo number_format($revenue, 2); ?></h3>
-                        <p>Total Sales</p>
+                        <p>Total Revenue</p>
                     </div>
                     <div class="stat-trend positive">
                         <i class="fas fa-arrow-up"></i>
@@ -4507,7 +3198,7 @@ function submitRestock(event) {
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="window.location.href='admin_pg.php?section=orders'" style="cursor: pointer;">
+                <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-shopping-cart"></i>
                     </div>
@@ -4525,7 +3216,7 @@ function submitRestock(event) {
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="window.location.href='admin_pg.php?section=accounts'" style="cursor: pointer;">
+                <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-users"></i>
                     </div>
@@ -4758,11 +3449,17 @@ function submitRestock(event) {
                             <input type="text" id="inventorySearch" placeholder="Search products..." class="dark-mode-search" style="box-shadow: 0 2px 15px rgba(255, 183, 94, 0.2); border-radius: 50px; width: 600px; padding-left: 40px;">
                         </div>
                         <div class="filter-group" style="margin-left: auto; padding-right: 20px;">
+                            <select id="categoryFilter" class="filter-select">
+                                <option value="all">All Categories</option>
+                                <option value="Main Dishes">Main Dishes</option>
+                                <option value="Side Dishes">Side Dishes</option>
+                                <option value="Desserts">Desserts</option>
+                            </select>
                             <select id="statusFilter" class="filter-select">
                                 <option value="all">All Status</option>
                                 <option value="out">Out of Stock</option>
                                 <option value="low">Critical Stock (≤10)</option>
-                                <option value="in">Sufficient</option>
+                                <option value="in">In Stock</option>
                             </select>
                         </div>
                     </div>
@@ -4897,8 +3594,10 @@ function submitRestock(event) {
                                 <th>Category</th>
                                 <th>Current Stock</th>
                                 <th>UOM</th>
+                                <th>Expiration Date</th>
                                 <th>Price</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -4926,8 +3625,34 @@ function submitRestock(event) {
                                 <td><?php echo $product['category'] ?? 'Uncategorized'; ?></td>
                                 <td><?php echo $product['stock']; ?></td>
                                 <td><?php echo $product['uom'] ?? 'N/A'; ?></td>
+                                <td><?php 
+                                    if (!empty($product['expiry_date'])) {
+                                        $expiry_date = new DateTime($product['expiry_date']);
+                                        $now = new DateTime();
+                                        $diff = $now->diff($expiry_date);
+                                        $days_until_expiry = $diff->days;
+                                        
+                                        if ($now > $expiry_date) {
+                                            echo '<span class="expiry-warning">Expired</span>';
+                                        } else if ($days_until_expiry <= 30) {
+                                            echo '<span class="expiry-warning">Expires in ' . $days_until_expiry . ' days</span>';
+                                        } else {
+                                            echo date('M d, Y', strtotime($product['expiry_date']));
+                                        }
+                                    } else {
+                                        echo 'N/A';
+                                    }
+                                ?></td>
                                 <td>₱<?php echo number_format($product['price'], 2); ?></td>
                                 <td><span class="status-badge <?php echo $status_class; ?>"><?php echo $stock_status; ?></span></td>
+                                <td class="action-buttons">
+                                    <button class="action-btn edit" title="Update Stock" onclick="updateStock(<?php echo $product['id']; ?>)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn history" title="View Stock History" onclick="viewStockHistory(<?php echo $product['id']; ?>)">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php
                             }
@@ -4967,242 +3692,137 @@ function submitRestock(event) {
             </div>
         </section>
 
-        <!-- Restocking Section -->
-        <section id="restocking-section" class="content-section hidden">
-            <div class="section-header">
-                <h2>Restocking</h2>
-            </div>
-            <div class="restocking-container">
-                <div class="restock-modal-content">
-                    <div class="restock-header">
-                        <h2>Record Restocking</h2>
-                        <button type="button" class="close-btn"><i class="fas fa-times"></i></button>
-                    </div>
-                    <form id="productRestockForm" class="restock-form" onsubmit="return submitRestock(event);">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="product">Product</label>
-                                <select id="product" name="product_id" required>
-                                    <option value="">Select a product</option>
-                                    <?php
-                                    $product_query = "SELECT id, product_name, unit_measurement FROM new_products ORDER BY product_name";
-                                    $product_result = mysqli_query($conn, $product_query);
-                                    while($row = mysqli_fetch_assoc($product_result)) {
-                                        echo "<option value='" . $row['id'] . "' data-uom='" . $row['unit_measurement'] . "'>" 
-                                            . htmlspecialchars($row['product_name']) . " (" . $row['unit_measurement'] . ")</option>";
-                                    }
-                                    ?>
-                                </select>
-                                <div id="currentStock" class="stock-info"></div>
-                            </div>
-                            <div class="form-group">
-                                <label for="quantity">Quantity</label>
-                                <input type="number" id="quantity" name="restock_quantity" step="0.01" min="0" required>
-                                <span id="uomDisplay" class="uom-display"></span>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="unitCost">Cost per Unit (₱)</label>
-                                <input type="number" id="unitCost" name="cost_per_unit" step="0.01" min="0" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="expirationDate">Expiration Date</label>
-                                <input type="date" id="expirationDate" name="expiration_date" required>
-                                <div id="expirationWarning" class="expiration-warning">
-                                    Must be at least 3 months (90 days) after today to prevent waste.
-                                </div>
-                                <div id="expirationStatus" class="expiration-status"></div>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="cancelRestock()">Cancel</button>
-                            <button type="submit" name="record_restocking" class="btn btn-primary">Restock</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Restock Records Table -->
-                <div class="restock-records">
-                    <div class="records-header">
-                        <h3>Recent Restocking Records</h3>
-                        <div class="filter-container">
-                            <select id="productFilter" class="filter-select">
-                                <option value="">All Products</option>
-                                <?php
-                                $products_query = "SELECT DISTINCT r.product_name 
-                                                 FROM restocking r 
-                                                 ORDER BY r.product_name ASC";
-                                $products_result = mysqli_query($conn, $products_query);
-                                while($product = mysqli_fetch_assoc($products_result)) {
-                                    echo "<option value='" . htmlspecialchars($product['product_name']) . "'>" 
-                                         . htmlspecialchars($product['product_name']) . "</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table class="restock-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Cost/Unit</th>
-                                    <th>Final Price</th>
-                                    <th>Expiration</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $restock_query = "SELECT 
-                                    r.*,
-                                    DATE_FORMAT(r.restock_date, '%M %d, %Y %h:%i %p') as formatted_date,
-                                    DATE_FORMAT(r.expiration_date, '%M %d, %Y') as formatted_expiry,
-                                    p.unit_measurement
-                                FROM restocking r 
-                                JOIN new_products p ON r.product_id = p.id 
-                                ORDER BY r.restock_date DESC 
-                                LIMIT 10";
-                                
-                                if (!($restock_result = mysqli_query($conn, $restock_query))) {
-                                    error_log("Error fetching restock records: " . mysqli_error($conn));
-                                }
-                                
-                                if ($restock_result && mysqli_num_rows($restock_result) > 0) {
-                                    while($restock = mysqli_fetch_assoc($restock_result)) {
-                                        echo "<tr>";
-                                        echo "<td>" . htmlspecialchars($restock['formatted_date']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($restock['product_name']) . "</td>";
-                                        echo "<td>" . htmlspecialchars($restock['restock_quantity']) . " " . htmlspecialchars($restock['unit_measurement']) . "</td>";
-                                        echo "<td>₱" . number_format($restock['cost_per_unit'], 2) . "</td>";
-                                        echo "<td>₱" . number_format($restock['final_price'], 2) . "</td>";
-                                        echo "<td>" . htmlspecialchars($restock['formatted_expiry']) . "</td>";
-                                        echo "</tr>";
-                                    }
-                                } else {
-                                    echo "<tr><td colspan='6' class='no-records'>No restocking records found</td></tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <!-- Menu Creation Section -->
         <section id="menu-creation-section" class="content-section hidden">
+            
+            <?php if(isset($message) && is_array($message)): ?>
+                <?php foreach($message as $msg): ?>
+                    <script>
+                        showNotification(<?php echo strpos($msg, 'successfully') !== false ? "'Success'" : "'Error'" ?>,                             '<?php echo strpos($msg, 'successfully') !== false ? 'Success' : 'Error' ?>',
+                            '<?php echo addslashes($msg) ?>'
+                        );
+                    </script>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
             <div class="menu-creation-container">
-                <div class="add-product-layout">
-                    <div class="form-side">
-                        <div class="add-product-form">
-                            <div class="form-header">
-                                <h2>ADD PRODUCT</h2>
+                <form action="" method="post" class="add-product-form" enctype="multipart/form-data">
+                    <div class="form-header">
+                        <h2>Add New Product</h2>
+                        <div class="form-subtitle">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Fill in the product details below to add a new item to your menu</span>
+                        </div>
+                    </div>
+
+                    <div class="form-content">
+                        <div class="form-section">
+                            <h3>Basic Information</h3>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="pname">Product Name</label>
+                                    <input type="text" name="pname" id="pname" placeholder="Enter product name" required>
+                                </div>
                             </div>
-                            <form action="" method="POST" enctype="multipart/form-data">
-                                <div class="form-content">
-                                    <div class="form-row-landscape">
-                                        <div class="input-group">
-                                            <label for="product_name">Product Name</label>
-                                            <input type="text" id="product_name" name="product_name" required>
-                                        </div>
-                                        <div class="input-group">
-                                            <label for="markup_value">Mark up value</label>
-                                            <input type="number" id="markup_value" name="markup_value" step="0.01" required>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row-landscape">
-                                        <div class="input-group">
-                                            <label for="category">Category</label>
-                                            <div class="category-select-wrapper">
-                                                <select id="category" name="category" required>
-                                                    <option value="">Select Category</option>
-                                                    <?php
-                                                    $query = "SELECT * FROM product_categories ORDER BY id";
-                                                    $result = mysqli_query($conn, $query);
-                                                    while($row = mysqli_fetch_assoc($result)) {
-                                                        echo "<option value='" . $row['id'] . "'>" . htmlspecialchars($row['category_name']) . "</option>";
-                                                    }
-                                                    ?>
-                                                </select>
-                                                <button type="button" class="add-category-btn" onclick="showAddCategoryModal()">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="input-group">
-                                            <label for="unit_measurement">Unit of Measurement</label>
-                                            <select id="unit_measurement" name="unit_measurement" required>
-                                                <option value="">Select UOM</option>
-                                                <option value="piece">Piece</option>
-                                                <option value="pack">Pack</option>
-                                                <option value="kg">Kilogram</option>
-                                                <option value="g">Gram</option>
-                                                <option value="ml">Milliliter</option>
-                                                <option value="l">Liter</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row-landscape upload-section">
-                                        <div class="input-group full-width">
-                                            <label for="product_image">Upload Image</label>
-                                            <div class="file-input-container">
-                                                <input type="file" id="product_image" name="product_image" accept="image/*" required>
-                                                <div class="file-input-ui">
-                                                    <i class="fas fa-cloud-upload-alt"></i>
-                                                    <span>Drop image here or click to upload</span>
-                                                    <small>Supported formats: PNG, JPG, JPEG</small>
-                                                </div>
-                                                <div id="imagePreview" class="image-preview"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-actions">
-                                        <button type="submit" name="add_product" class="btn btn-primary">
-                                            <i class="fas fa-plus-circle"></i> Add Product
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="category">Category</label>
+                                    <div class="category-select-container">
+                                        <select name="category" id="category" required>
+                                            <option value="">Select a category</option>
+                                            <?php
+                                            // Fetch categories from the database
+                                            $query = "SELECT id, category_name FROM product_categories ORDER BY id";
+                                            $result = mysqli_query($conn, $query);
+                                            
+                                            if (mysqli_num_rows($result) == 0) {
+                                                // If no categories exist, add some default ones
+                                                $default_categories = [
+                                                    'Main Dishes',
+                                                    'Side Dishes',
+                                                    'Desserts',
+                                                    'Drinks',
+                                                    'Top Seller'
+                                                ];
+                                                
+                                                foreach ($default_categories as $category) {
+                                                    $insert_query = "INSERT INTO product_categories (category_name) VALUES (?)";
+                                                    $stmt = mysqli_prepare($conn, $insert_query);
+                                                    mysqli_stmt_bind_param($stmt, "s", $category);
+                                                    mysqli_stmt_execute($stmt);
+                                                }
+                                                
+                                                // Fetch the categories again after inserting defaults
+                                                $result = mysqli_query($conn, "SELECT id, category_name FROM product_categories ORDER BY id");
+                                            }
+                                            
+                                            while($row = mysqli_fetch_assoc($result)) {
+                                                echo "<option value='" . $row['id'] . "'>" . htmlspecialchars($row['category_name']) . "</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                        <button type="button" class="add-category-btn" onclick="showAddCategoryModal()">
+                                            <i class="fas fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
-                            </form>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="price">Price (₱)</label>
+                                    <input type="number" name="price" id="price" min="0" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="uom">Unit of Measurement</label>
+                                    <select name="uom" id="uom" required>
+                                        <option value="">Select UOM</option>
+                                        <option value="piece">Piece</option>
+                                        <option value="pack">Pack</option>
+                                        <option value="kg">Kilogram</option>
+                                        <option value="g">Gram</option>
+                                        <option value="ml">Milliliter</option>
+                                        <option value="l">Liter</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="stock">Stock Quantity</label>
+                                    <input type="number" name="stock" id="stock" min="0" placeholder="Enter quantity" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="exp_date">Expiration Date</label>
+                                    <input type="date" name="exp_date" id="exp_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Product Image</h3>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <div class="file-input-container">
+                                        <input type="file" name="image" id="image" accept="image/*" required>
+                                        <div class="file-input-ui">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Drop image here or click to upload</span>
+                                            <small>Supported formats: PNG, JPG, JPEG</small>
+                                        </div>
+                                        <div id="imagePreview" class="file-preview"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Product Cards Container -->
-                <div class="product-cards-container">
-                    <div class="product-grid">
-                        <?php
-                        $products_query = "SELECT * FROM new_products ORDER BY created_at DESC";
-                        $products_result = mysqli_query($conn, $products_query);
-                        
-                        while($product = mysqli_fetch_assoc($products_result)) {
-                            echo '<div class="product-card">';
-                            echo '<img src="../uploaded_img/' . htmlspecialchars($product['image']) . '" alt="' . htmlspecialchars($product['product_name']) . '">';
-                            echo '<div class="product-details">';
-                            echo '<h3>' . htmlspecialchars($product['product_name']) . '</h3>';
-                            echo '<p class="category">' . htmlspecialchars($product['category_name']) . '</p>';
-                            echo '<p class="markup">Markup: ₱' . htmlspecialchars($product['markup_value']) . '</p>';
-                            echo '<p class="uom">UOM: ' . htmlspecialchars($product['unit_measurement']) . '</p>';
-                            echo '</div>';
-                            echo '</div>';
-                        }
-                        ?>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo"></i> Reset Form
+                        </button>
+                        <button type="submit" name="add_product" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Add Product
+                        </button>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Inventory Section -->
                 </form>
             </div>
 
@@ -5291,150 +3911,6 @@ function submitRestock(event) {
                 <p>Welcome to your admin dashboard</p>
             </div>
         </section>
-
-        <style>
-            /* Dark mode styles for roles section modals */
-            .modal {
-                background-color: rgba(0, 0, 0, 0.7) !important;
-            }
-            .modal-content {
-                background-color: #1a1a1a !important;
-                color: #ffffff !important;
-                border: 1px solid #333 !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-            }
-            
-            /* Input fields dark mode */
-            .modal-content input[type="text"],
-            .modal-content input[type="email"],
-            .modal-content input[type="password"],
-            .modal-content #username,
-            .modal-content #firstName,
-            .modal-content #lastName,
-            .modal-content #email,
-            .modal-content #password,
-            .modal-content #confirmPassword {
-                background-color: #2d2d2d !important;
-                color: #ffffff !important;
-                border: 1px solid #444 !important;
-                border-radius: 6px;
-                padding: 8px 12px;
-            }
-
-            .modal-content input[type="text"]:focus,
-            .modal-content input[type="email"]:focus,
-            .modal-content input[type="password"]:focus,
-            .modal-content #username:focus,
-            .modal-content #firstName:focus,
-            .modal-content #lastName:focus,
-            .modal-content #email:focus,
-            .modal-content #password:focus,
-            .modal-content #confirmPassword:focus {
-                border-color: #FF7F50 !important;
-                box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.2) !important;
-                outline: none;
-            }
-
-            /* Admin note styles */
-            .admin-note {
-                background-color: #2d2d2d !important;
-                border: 1px solid #444 !important;
-                border-radius: 8px;
-                padding: 15px;
-                margin: 15px 0;
-            }
-
-            .note-content {
-                display: flex;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .note-content i {
-                color: #FF7F50;
-                font-size: 18px;
-                margin-top: 3px;
-            }
-
-            .note-content p {
-                color: #b0b0b0 !important;
-                margin: 0;
-                font-size: 14px;
-                line-height: 1.5;
-            }
-
-            /* Show admin note only for admin role */
-            #adminPermissions {
-                display: none;
-            }
-
-            [data-role="2"] #adminPermissions {
-                display: block;
-            }
-            .modal-header {
-                border-bottom: 1px solid #333 !important;
-                background-color: #1a1a1a !important;
-            }
-            .modal-header h2 {
-                color: #ffffff !important;
-            }
-            .form-group label {
-                color: #ffffff !important;
-            }
-            .form-group input, 
-            .form-group select,
-            .form-group textarea {
-                background-color: #2d2d2d !important;
-                color: #ffffff !important;
-                border: 1px solid #444 !important;
-            }
-            .form-group input:focus,
-            .form-group select:focus,
-            .form-group textarea:focus {
-                border-color: #FF7F50 !important;
-                box-shadow: 0 0 0 2px rgba(255, 127, 80, 0.2) !important;
-            }
-            .close {
-                color: #ffffff !important;
-            }
-            .close:hover {
-                color: #FF7F50 !important;
-            }
-            .form-actions button {
-                background: #2d2d2d !important;
-                color: #ffffff !important;
-                border: 1px solid #444 !important;
-            }
-            .form-actions button:hover {
-                background: #3d3d3d !important;
-            }
-            .checkbox-group {
-                background-color: #2d2d2d !important;
-                border: 1px solid #444 !important;
-                padding: 15px !important;
-                border-radius: 4px !important;
-            }
-            .checkbox-group label {
-                color: #ffffff !important;
-            }
-            .modal input[type="checkbox"] {
-                background-color: #2d2d2d !important;
-                border: 1px solid #444 !important;
-            }
-            .modal input[type="checkbox"]:checked {
-                background-color: #FF7F50 !important;
-                border-color: #FF7F50 !important;
-            }
-            .cancel-btn {
-                background-color: #2d2d2d !important;
-                color: #ffffff !important;
-                border: 1px solid #444 !important;
-            }
-            .create-account-btn {
-                background-color: #FF7F50 !important;
-                color: #ffffff !important;
-            }
-        </style>
 
         <!-- User Roles Section -->
         <section id="roles-section" class="content-section hidden">
@@ -5527,30 +4003,6 @@ function submitRestock(event) {
 
 
             <!-- Create User Form Modal -->
-            <script>
-                function showCreateUserForm(roleId) {
-                    document.getElementById('roleId').value = roleId;
-                    const modal = document.getElementById('createUserModal');
-                    modal.style.display = 'block';
-                    modal.setAttribute('data-role', roleId);
-                }
-
-                function hideCreateUserForm() {
-                    document.getElementById('createUserModal').style.display = 'none';
-                    document.getElementById('createUserForm').reset();
-                }
-
-                function validateForm() {
-                    const password = document.getElementById('password').value;
-                    const confirmPassword = document.getElementById('confirmPassword').value;
-                    if (password !== confirmPassword) {
-                        alert('Passwords do not match!');
-                        return false;
-                    }
-                    return true;
-                }
-            </script>
-
             <div id="createUserModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -5603,11 +4055,34 @@ function submitRestock(event) {
                         <input type="hidden" name="createUser" value="1">
                         <input type="hidden" name="roleId" id="roleId">
 
-                        <!-- Admin Note Section -->
-                        <div id="adminPermissions" class="permissions-section admin-note">
-                            <div class="note-content">
-                                <i class="fas fa-info-circle"></i>
-                                <p>Important: Admin accounts have full system access. Ensure you follow security best practices and only grant admin privileges to trusted personnel.</p>
+                        <!-- Admin Permissions Section -->
+                        <div id="adminPermissions" class="permissions-section" style="display: none;">
+                            <h4>Admin Permissions</h4>
+                            <div class="permissions-grid">
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_dashboard" name="permissions[]" value="dashboard">
+                                    <label for="perm_dashboard">Dashboard Access</label>
+                                </div>
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_landing" name="permissions[]" value="landing">
+                                    <label for="perm_landing">Landing Settings</label>
+                                </div>
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_inventory" name="permissions[]" value="inventory">
+                                    <label for="perm_inventory">Inventory Management</label>
+                                </div>
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_menu" name="permissions[]" value="menu">
+                                    <label for="perm_menu">Menu Creation</label>
+                                </div>
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_orders" name="permissions[]" value="orders">
+                                    <label for="perm_orders">Order Management</label>
+                                </div>
+                                <div class="permission-item">
+                                    <input type="checkbox" id="perm_reports" name="permissions[]" value="reports">
+                                    <label for="perm_reports">Reports Access</label>
+                                </div>
                             </div>
                         </div>
 
@@ -5937,26 +4412,11 @@ function submitRestock(event) {
                     cursor: pointer;
                 }
 
-.features-list {
-                margin: 10px 0;
-            }
+                .features-list {
+                    margin: 10px 0;
+                }
 
-            .total-cost-display {
-                padding: 8px 12px;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                background: #f9fafb;
-                font-size: 14px;
-                min-height: 37px;
-                display: flex;
-                align-items: center;
-            }
-
-            [data-theme="dark"] .total-cost-display {
-                background: #2d303a;
-                border-color: rgba(255, 255, 255, 0.1);
-                color: #fff;
-            }                .feature-item {
+                .feature-item {
                     display: flex;
                     align-items: center;
                     gap: 10px;
@@ -6995,9 +5455,25 @@ function submitRestock(event) {
     </div>
 
     <script>
-        // Settings section functionality
+        // Reset form function
+        function resetForm() {
+            const form = document.querySelector('.add-product-form');
+            form.reset();
+            showNotification('Info', 'Form has been reset', 'info');
+        }
+
+        // Update file input UI when file is selected
         document.addEventListener('DOMContentLoaded', function() {
-            // Settings initialization code here
+            const fileInput = document.getElementById('p_image');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const fileName = e.target.files[0]?.name;
+                    const fileUi = this.parentElement.querySelector('.file-input-ui span');
+                    if (fileName) {
+                        fileUi.textContent = fileName;
+                    } else {
+                        fileUi.textContent = 'Click or drag image to upload';
+                    }
                 });
             }
         });
@@ -7012,7 +5488,7 @@ function submitRestock(event) {
             const sectionInfo = {
                 'dashboard': { title: 'Dashboard', icon: 'fas fa-chart-pie' },
                 'inventory': { title: 'Inventory Management', icon: 'fas fa-boxes' },
-                'menu-creation': { title: 'Products', icon: 'fas fa-utensils' },
+                'menu-creation': { title: 'Menu Creation', icon: 'fas fa-utensils' },
                 'roles': { title: 'User Roles', icon: 'fas fa-user-shield' },
                 'accounts': { title: 'User Accounts', icon: 'fas fa-users-cog' },
                 'reports': { title: 'Reports', icon: 'fas fa-chart-line' },
@@ -7120,8 +5596,7 @@ function submitRestock(event) {
             const sectionMap = {
                 'dashboard': { icon: 'chart-pie', title: 'Dashboard' },
                 'inventory': { icon: 'boxes', title: 'Inventory Management' },
-                'menu-creation': { icon: 'plus', title: 'Add New Product' },
-                'restocking': { icon: 'box', title: 'Products' },
+                'menu-creation': { icon: 'utensils', title: 'Menu Creation' },
                 'orders': { icon: 'shopping-cart', title: 'Orders' },
                 'roles': { icon: 'user-shield', title: 'User Roles' },
                 'accounts': { icon: 'users-cog', title: 'User Accounts' },
@@ -7304,7 +5779,7 @@ document.getElementById('stockUpdateForm')?.addEventListener('submit', function(
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/dashboard.js"></script>
-    <script src="js/header-manager.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Initialize Revenue Chart
     document.addEventListener('DOMContentLoaded', function() {
@@ -7559,7 +6034,7 @@ document.querySelector('.close-modal')?.addEventListener('click', function() {
 // Function to handle AJAX responses
 function handleAjaxResponse(response, action) {
     if (response.success) {
-        showNotification('Success', `Item ${action} successfully`, 'success');
+        notifications.showSuccess('Success', `Item ${action} successfully`);
     } else {
         showNotification('Error', response.error || `Failed to ${action} item`, 'error');
     }
@@ -7586,7 +6061,7 @@ window.addEventListener('load', function() {
     if (pending) {
         const {action, timestamp} = JSON.parse(pending);
         if (Date.now() - timestamp < 1000) { // Only show if recent
-            showNotification('Success', `Item ${action} successfully`, 'success');
+            notifications.showSuccess('Success', `Item ${action} successfully`);
         }
         sessionStorage.removeItem('pendingNotification');
     }
@@ -8324,34 +6799,6 @@ window.addEventListener('load', function() {
                     observer.observe(landingSection, { attributes: true });
                 }
             });
-
-            // Handle submenu interactions
-            document.addEventListener('DOMContentLoaded', function() {
-                // Prevent parent menu item from being clickable
-                document.querySelectorAll('.menu-item.has-submenu > a').forEach(parentLink => {
-                    parentLink.addEventListener('click', function(e) {
-                        e.preventDefault();
-                    });
-                });
-                
-                // Add click handlers to submenu items
-                document.querySelectorAll('.submenu a').forEach(submenuLink => {
-                    submenuLink.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const section = this.getAttribute('data-section');
-                        if (section) {
-                            // Remove active class from all submenu items
-                            document.querySelectorAll('.submenu li').forEach(item => {
-                                item.classList.remove('active');
-                            });
-                            
-                            // Add active class to clicked submenu item
-                            this.closest('.menu-item').classList.add('active');
-                            
-                            showSection(section);
-                        }
-                    });
-                });
         </script>
     </body>
 </html>

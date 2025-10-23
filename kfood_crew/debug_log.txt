@@ -1704,3 +1704,65 @@ Crinkles (1)
 ----------------------------------------
 [2025-10-18 16:18:38] Successfully completed stock deduction for Order #114
 ----------------------------------------
+[2025-10-23 05:22:46] Starting stock deduction for Order #116\nData: Array
+(
+    [items] => Pastil (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-23 05:22:46] Processing item: Pastil (1)
+----------------------------------------
+[2025-10-23 05:22:46] Updating stock for Pastil\nData: Array
+(
+    [product_id] => 1
+    [current_stock] => 70
+    [quantity_to_deduct] => 1
+    [new_stock] => 69
+)
+
+----------------------------------------
+[2025-10-23 05:22:46] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 1
+    [quantity] => 1
+    [previous_stock] => 70
+    [new_stock] => 69
+)
+
+----------------------------------------
+[2025-10-23 05:22:46] Successfully completed stock deduction for Order #116
+----------------------------------------
+[2025-10-23 05:28:35] Successfully completed stock deduction for Order #117
+----------------------------------------
+[2025-10-23 05:28:38] Starting stock deduction for Order #117\nData: Array
+(
+    [items] => Pastil (1)
+    [total_products] => 1
+)
+
+----------------------------------------
+[2025-10-23 05:28:38] Processing item: Pastil (1)
+----------------------------------------
+[2025-10-23 05:28:38] Updating stock for Pastil\nData: Array
+(
+    [product_id] => 1
+    [current_stock] => 69
+    [quantity_to_deduct] => 1
+    [new_stock] => 68
+)
+
+----------------------------------------
+[2025-10-23 05:28:38] Recording stock history\nData: Array
+(
+    [type] => stock_out
+    [product_id] => 1
+    [quantity] => 1
+    [previous_stock] => 69
+    [new_stock] => 68
+)
+
+----------------------------------------
+[2025-10-23 05:28:38] Successfully completed stock deduction for Order #117
+----------------------------------------

@@ -7,9 +7,11 @@ if(isset($_GET['product_id'])) {
     $query = "SELECT 
                 date,
                 type,
+                expiration_batch,
                 quantity,
                 previous_stock,
-                new_stock 
+                new_stock,
+                cost_per_unit 
               FROM stock_history 
               WHERE product_id = ? 
               ORDER BY date DESC";
@@ -22,6 +24,9 @@ if(isset($_GET['product_id'])) {
     $history = [];
     while($row = mysqli_fetch_assoc($result)) {
         $row['date'] = date('M d, Y g:i A', strtotime($row['date']));
+        if ($row['expiration_batch']) {
+            $row['expiration_batch'] = date('M d, Y', strtotime($row['expiration_batch']));
+        }
         $history[] = $row;
     }
     

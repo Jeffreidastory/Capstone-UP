@@ -1,102 +1,136 @@
-.restocking-container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.restock-content {
-    background: #fff;
+.restock-modal-content {
+    background: #2a2d3a;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white;
+    position: relative;
 }
 
-[data-theme="dark"] .restock-content {
-    background: #2a2d3a;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.restock-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.restock-content h2 {
-    margin-bottom: 20px;
-    color: #333;
+.restock-form .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: relative;
 }
 
-[data-theme="dark"] .restock-content h2 {
-    color: #fff;
+.restock-form .form-group {
+    position: relative;
+    z-index: 1;
 }
 
-.form-group {
-    margin-bottom: 15px;
+.restock-form select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #3f4456;
+    background: #373b4d;
+    color: white;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
 }
 
-.form-group label {
+.restock-form input[type="number"],
+.restock-form input[type="date"] {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #3f4456;
+    background: #373b4d;
+    color: white;
+    position: relative;
+    z-index: 1;
+}
+
+.restock-form label {
     display: block;
     margin-bottom: 5px;
-    color: #666;
+    color: #b4bac5;
 }
 
-[data-theme="dark"] .form-group label {
-    color: #ccc;
+.uom-display {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #b4bac5;
 }
 
-.form-group select,
-.form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
+.stock-info {
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #b4bac5;
+}
+
+.expiration-warning {
+    font-size: 0.8em;
+    color: #ff9f89;
+    margin-top: 5px;
+}
+
+.expiration-status {
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+.expiration-status.warning {
+    color: #ffd700;
+}
+
+.expiration-status.good {
+    color: #4caf50;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 8px 16px;
     border-radius: 4px;
-    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-[data-theme="dark"] .form-group select,
-[data-theme="dark"] .form-group input {
-    background: #32364a;
-    border-color: #444;
-    color: #fff;
+.btn-secondary {
+    background: #3f4456;
+    color: white;
 }
 
 .btn-primary {
-    background: #FF7F50;
+    background: #ff7f50;
     color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
 }
 
-.btn-primary:hover {
-    background: #ff6b3d;
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.restock-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    background: #fff;
+.btn:active {
+    transform: translateY(0);
 }
 
-[data-theme="dark"] .restock-table {
+/* Ensure select dropdown appears above other elements */
+.restock-form select option {
     background: #2a2d3a;
+    color: white;
+    padding: 8px;
 }
 
-.restock-table th,
-.restock-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-[data-theme="dark"] .restock-table th,
-[data-theme="dark"] .restock-table td {
-    border-color: #444;
-    color: #fff;
-}
-
-.restock-table th {
-    background: #f5f5f5;
-    font-weight: bold;
-}
-
-[data-theme="dark"] .restock-table th {
-    background: #32364a;
+/* Dark theme adjustments */
+[data-theme="dark"] .restock-modal-content {
+    background: #2a2d3a;
+    border: 1px solid #3f4456;
 }

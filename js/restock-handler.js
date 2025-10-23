@@ -1,256 +1,71 @@
-document.addEventListener('DOMContentLoaded', function() {document.addEventListener('DOMContentLoaded', function() {document.addEventListener('DOMContentLoaded', function() {document.addEventListener('DOMContentLoaded', function() {
-
+document.addEventListener('DOMContentLoaded', function() {
     const restockForm = document.getElementById('restockForm');
-
-        const restockForm = document.getElementById('restockForm');
-
-    if (restockForm) {
-
-        restockForm.addEventListener('submit', function(e) {    console.log('Looking for restock form...');    // Get form element    const restockForm = document.getElementById('restockForm');
-
-            e.preventDefault();
-
-            
-
-            const formData = new FormData(restockForm);
-
-                if (restockForm) {    const restockForm = document.getElementById('restockForm');    const productSelect = document.getElementById('product');
-
-            fetch('process_restock.php', {
-
-                method: 'POST',        console.log('Restock form found');
-
-                body: formData
-
-            })        restockForm.addEventListener('submit', async function(e) {        const quantityInput = document.getElementById('quantity');  // Now matches the form field name
-
-            .then(response => response.json())
-
-            .then(data => {            e.preventDefault();
-
-                if (data.success) {
-
-                    alert('Stock recorded successfully!');            console.log('Form submitted');    if (restockForm) {    const unitCostInput = document.getElementById('unitCost');  // Now matches the form field name
-
-                    restockForm.reset();
-
-                    location.reload();
-
-                } else {
-
-                    alert(data.message || 'Error recording stock');            const formData = new FormData(this);        restockForm.addEventListener('submit', async function(e) {    const expirationDateInput = document.getElementById('expirationDate');  // Now matches the form field name
-
-                }
-
-            })            
-
-            .catch(error => {
-
-                console.error('Error:', error);            // Debug log form data            e.preventDefault();    const stockInfo = document.getElementById('stockInfo');
-
-                alert('An error occurred while processing the request');
-
-            });            for (let pair of formData.entries()) {
-
-        });
-
-    }                console.log(pair[0] + ': ' + pair[1]);                const expirationStatus = document.getElementById('expirationStatus');
-
-});
-            }
-
-            // Get form data    const uomDisplay = document.getElementById('uomDisplay');
-
-            try {
-
-                console.log('Sending request...');            const formData = new FormData(this);
-
-                const response = await fetch('process_restock.php', {
-
-                    method: 'POST',                // Function to format date as YYYY-MM-DD
-
-                    body: formData
-
-                });            try {    function formatDate(date) {
-
-                
-
-                console.log('Got response');                const response = await fetch('process_restock.php', {        return date.toISOString().split('T')[0];
-
-                const data = await response.json();
-
-                console.log('Response data:', data);                    method: 'POST',    }
-
-
-
-                if (data.success) {                    body: formData
-
-                    alert('Stock recorded successfully!');
-
-                    this.reset();                });    // Set minimum date for expiration date input
-
-                    loadRestockRecords();
-
-                } else {                    const tomorrow = new Date();
-
-                    alert(data.message || 'Error recording stock');
-
-                }                const data = await response.json();    tomorrow.setDate(tomorrow.getDate() + 1);
-
-            } catch (error) {
-
-                console.error('Error:', error);                    expirationDateInput.min = formatDate(tomorrow);
-
-                alert('An error occurred while processing the request');
-
-            }                if (data.success) {
-
-        });
-
-    } else {                    alert('Stock recorded successfully!');    // Function to show notification
-
-        console.error('Restock form not found!');
-
-    }                    // Clear form    function showNotification(message, type) {
-
-
-
-    // Function to load restock records                    this.reset();        // Remove any existing notifications
-
-    function loadRestockRecords() {
-
-        console.log('Loading restock records...');                    // Refresh the table        const existingNotifications = document.querySelectorAll('.notification');
-
-        fetch('get_restock_records.php')
-
-            .then(response => {                    loadRestockRecords();        existingNotifications.forEach(notification => notification.remove());
-
-                console.log('Got response from get_restock_records.php');
-
-                return response.json();                } else {
-
-            })
-
-            .then(data => {                    alert(data.message || 'Error recording stock');        // Create new notification
-
-                console.log('Records data:', data);
-
-                const tableBody = document.querySelector('.restock-table tbody');                }        const notification = document.createElement('div');
-
-                if (!tableBody) {
-
-                    console.error('Table body element not found!');            } catch (error) {        notification.className = `notification ${type}`;
-
-                    return;
-
-                }                console.error('Error:', error);        
-
-
-
-                tableBody.innerHTML = '';                alert('An error occurred while processing the request');        const icon = type === 'success' ? '✓' : '⚠';
-
-                
-
-                if (Array.isArray(data)) {            }        
-
-                    data.forEach(record => {
-
-                        const row = document.createElement('tr');        });        notification.innerHTML = `
-
-                        const total_cost = record.restock_quantity * record.cost_per_unit;
-
-                        row.innerHTML = `    }            <span class="notification-icon">${icon}</span>
-
-                            <td>${record.product_name}</td>
-
-                            <td>${record.current_stock}</td>            <span class="notification-message">${message}</span>
-
-                            <td>${record.restock_quantity}</td>
-
-                            <td>₱${parseFloat(record.cost_per_unit).toFixed(2)}</td>    // Function to load restock records            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
-
-                            <td>₱${total_cost.toFixed(2)}</td>
-
-                            <td>${new Date(record.expiration_date).toLocaleDateString()}</td>    function loadRestockRecords() {        `;
-
-                            <td>${new Date(record.restock_date).toLocaleDateString()}</td>
-
-                            <td>${record.status}</td>        fetch('get_restock_records.php')
-
-                        `;
-
-                        tableBody.appendChild(row);            .then(response => response.json())        document.body.appendChild(notification);
-
-                    });
-
-                } else {            .then(data => {
-
-                    console.error('Received data is not an array:', data);
-
-                }                const tableBody = document.querySelector('.restock-table tbody');        // Auto dismiss after 5 seconds
-
-            })
-
-            .catch(error => {                if (!tableBody) return;        setTimeout(() => {
-
-                console.error('Error loading records:', error);
-
-            });            notification.style.animation = 'slideIn 0.5s ease-out reverse';
-
+    const productSelect = document.getElementById('product');
+    const quantityInput = document.getElementById('quantity');
+    const unitCostInput = document.getElementById('unitCost');
+    const expirationDateInput = document.getElementById('expirationDate');
+    const stockInfo = document.getElementById('stockInfo');
+    const expirationStatus = document.getElementById('expirationStatus');
+    const uomDisplay = document.getElementById('uomDisplay');
+
+    // Function to format date as YYYY-MM-DD
+    function formatDate(date) {
+        return date.toISOString().split('T')[0];
     }
 
-                tableBody.innerHTML = '';            setTimeout(() => notification.remove(), 500);
+    // Set minimum date for expiration date input
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expirationDateInput.min = formatDate(tomorrow);
 
-    // Initial load of records
+    // Function to show notification
+    function showNotification(message, type) {
+        // Remove any existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
 
-    loadRestockRecords();                        }, 5000);
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        const icon = type === 'success' ? '✓' : '⚠';
+        
+        notification.innerHTML = `
+            <span class="notification-icon">${icon}</span>
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        `;
 
-});
-                data.forEach(record => {
+        document.body.appendChild(notification);
 
-                    const row = document.createElement('tr');        // Add click handler to close button
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideIn 0.5s ease-out reverse';
+            setTimeout(() => notification.remove(), 500);
+        }, 5000);
 
-                    row.innerHTML = `        const closeButton = notification.querySelector('.notification-close');
+        // Add click handler to close button
+        const closeButton = notification.querySelector('.notification-close');
+        closeButton.addEventListener('click', () => {
+            notification.style.animation = 'slideIn 0.5s ease-out reverse';
+            setTimeout(() => notification.remove(), 500);
+        });
+    }
 
-                        <td>${record.product_name}</td>        closeButton.addEventListener('click', () => {
+    // Update stock info when product is selected
+    productSelect.addEventListener('change', async function() {
+        const productId = this.value;
+        if (!productId) {
+            stockInfo.textContent = '';
+            uomDisplay.textContent = '';
+            return;
+        }
 
-                        <td>${record.current_stock}</td>            notification.style.animation = 'slideIn 0.5s ease-out reverse';
-
-                        <td>${record.restock_quantity}</td>            setTimeout(() => notification.remove(), 500);
-
-                        <td>₱${parseFloat(record.cost_per_unit).toFixed(2)}</td>        });
-
-                        <td>₱${(record.restock_quantity * record.cost_per_unit).toFixed(2)}</td>    }
-
-                        <td>${new Date(record.expiration_date).toLocaleDateString()}</td>
-
-                        <td>${new Date(record.restock_date).toLocaleDateString()}</td>    // Update stock info when product is selected
-
-                        <td>${record.status}</td>    productSelect.addEventListener('change', async function() {
-
-                    `;        const productId = this.value;
-
-                    tableBody.appendChild(row);        if (!productId) {
-
-                });            stockInfo.textContent = '';
-
-            })            uomDisplay.textContent = '';
-
-            .catch(error => {            return;
-
-                console.error('Error:', error);        }
-
-            });
-
-    }        try {
-
+        try {
             const response = await fetch('../js/check_stock.php?product_id=' + productId);
+            const data = await response.json();
 
-    // Load records when page loads            const data = await response.json();
-
-    loadRestockRecords();
-
-});            if (data.success) {
+            if (data.success) {
                 stockInfo.textContent = `Current Stock: ${data.current_stock} ${data.uom}`;
                 uomDisplay.textContent = data.uom;
             } else {
@@ -299,6 +114,15 @@ document.addEventListener('DOMContentLoaded', function() {document.addEventListe
     // Form submission handler
     restockForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.log('Form submitted');
+
+        // Log form field values
+        console.log('Form values:', {
+            product: productSelect.value,
+            quantity: quantityInput.value,
+            unitCost: unitCostInput.value,
+            expirationDate: expirationDateInput.value
+        });
 
         // Validate inputs
         if (!productSelect.value) {
@@ -306,12 +130,12 @@ document.addEventListener('DOMContentLoaded', function() {document.addEventListe
             return;
         }
 
-        if (quantityInput.value <= 0) {
+        if (!quantityInput.value || quantityInput.value <= 0) {
             showNotification('Quantity must be greater than 0', 'error');
             return;
         }
 
-        if (unitCostInput.value <= 0) {
+        if (!unitCostInput.value || unitCostInput.value <= 0) {
             showNotification('Unit cost must be greater than 0', 'error');
             return;
         }
@@ -323,13 +147,28 @@ document.addEventListener('DOMContentLoaded', function() {document.addEventListe
         submitButton.innerHTML = 'Recording...';
 
         // Prepare form data
-        const formData = new FormData(this);
+        const formData = new FormData();
+        formData.append('product_id', productSelect.value);
+        formData.append('restock_quantity', quantityInput.value);
+        formData.append('cost_per_unit', unitCostInput.value);
+        formData.append('expiration_date', expirationDateInput.value);
+
+        // Log the data being sent
+        console.log('Sending data:', {
+            product_id: productSelect.value,
+            restock_quantity: quantityInput.value,
+            cost_per_unit: unitCostInput.value,
+            expiration_date: expirationDateInput.value
+        });
 
         try {
             const response = await fetch('../kfood_admin/process_restock.php', {
                 method: 'POST',
                 body: formData
             });
+            
+            // Log raw response
+            console.log('Raw response:', await response.clone().text());
 
             const result = await response.json();
 
@@ -366,15 +205,14 @@ document.addEventListener('DOMContentLoaded', function() {document.addEventListe
 
                 data.forEach(record => {
                     const row = document.createElement('tr');
-                    const total_cost = record.restock_quantity * record.cost_per_unit;
                     row.innerHTML = `
                         <td>${record.product_name}</td>
-                        <td>${record.current_stock} ${record.unit_measurement}</td>
-                        <td>${record.restock_quantity} ${record.unit_measurement}</td>
-                        <td>₱${parseFloat(record.cost_per_unit).toFixed(2)}</td>
-                        <td>₱${total_cost.toFixed(2)}</td>
-                        <td>${new Date(record.expiration_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                        <td>${new Date(record.restock_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                        <td>${record.current_stock} ${record.uom}</td>
+                        <td>${record.quantity} ${record.uom}</td>
+                        <td>₱${parseFloat(record.unit_cost).toFixed(2)}</td>
+                        <td>₱${parseFloat(record.total_cost).toFixed(2)}</td>
+                        <td>${record.expiration_date}</td>
+                        <td>${record.timestamp}</td>
                         <td><span class="status-badge status-${record.status.toLowerCase()}">${record.status}</span></td>
                     `;
                     tableBody.appendChild(row);

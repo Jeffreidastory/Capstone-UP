@@ -6,54 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityInput = document.getElementById('restock_quantity');
     const costInput = document.getElementById('cost_per_unit');
     const expirationInput = document.getElementById('expiration_date');
-    const uomDisplay = document.getElementById('uomDisplay');
-    const expirationStatus = document.getElementById('expirationStatus');
 
     // Initialize min date for expiration
     const today = new Date();
     const minDate = new Date(today);
     minDate.setDate(today.getDate() + 90); // Set minimum date to 90 days from today
     expirationInput.min = minDate.toISOString().split('T')[0];
-
-    // Handle product selection change
-    productSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const uom = selectedOption.dataset.uom;
-        uomDisplay.textContent = uom || '';
-
-        // Get current stock level
-        if (this.value) {
-            fetch(`check_stock.php?product_id=${this.value}`)
-                .then(response => response.json())
-                .then(data => {
-                    const stockInfo = document.getElementById('currentStock');
-                    if (data.stock_level <= 0) {
-                        stockInfo.textContent = 'Current Stock: Out of stock';
-                        stockInfo.className = 'stock-info out-of-stock';
-                    } else if (data.stock_level <= 10) {
-                        stockInfo.textContent = `Current Stock: ${data.stock_level} ${uom} (Low)`;
-                        stockInfo.className = 'stock-info low-stock';
-                    } else {
-                        stockInfo.textContent = `Current Stock: ${data.stock_level} ${uom}`;
-                        stockInfo.className = 'stock-info in-stock';
-                    }
-                });
-        }
-    });
-
-    // Handle expiration date change
-    expirationInput.addEventListener('change', function() {
-        const selectedDate = new Date(this.value);
-        const daysDiff = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff < 90) {
-            expirationStatus.textContent = 'Warning: Less than 3 months until expiration';
-            expirationStatus.className = 'expiration-status warning';
-        } else {
-            expirationStatus.textContent = 'Valid expiration date';
-            expirationStatus.className = 'expiration-status good';
-        }
-    });
 
     // Form submission
     restockForm.addEventListener('submit', async function(e) {
@@ -118,6 +76,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Refresh restocking records table
                 loadRestockRecords();
+
+                // Redirect to Inventory section after a short delay so user sees the success notification
+                setTimeout(() => {
+                    window.location.href = 'admin_pg.php?section=inventory';
+                }, 1200);
             } else {
                 showNotification('Error', data.message, 'error');
             }
@@ -151,14 +114,16 @@ function loadRestockRecords() {
     fetch('get_restock_records.php')
         .then(response => response.json())
         .then(data => {
+            const records = Array.isArray(data) ? data : (data.records || []);
             const tbody = document.querySelector('.restock-table tbody');
             if (tbody) {
-                tbody.innerHTML = data.records.map(record => `
+                tbody.innerHTML = records.map(record => `
                     <tr>
                         <td>${new Date(record.restock_date).toLocaleDateString()}</td>
                         <td>${record.product_name}</td>
                         <td>${record.restock_quantity} ${record.unit_measurement}</td>
                         <td>₱${parseFloat(record.cost_per_unit).toFixed(2)}</td>
+                        <td>₱${parseFloat(record.final_price).toFixed(2)}</td>
                         <td>${new Date(record.expiration_date).toLocaleDateString()}</td>
                         <td><span class="status-badge status-${record.status.toLowerCase()}">${record.status}</span></td>
                     </tr>

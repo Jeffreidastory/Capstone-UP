@@ -1,0 +1,53 @@
+                <div class="restock-modal-content">
+                    <div class="restock-header">
+                        <h2>Record Restocking</h2>
+                        <button type="button" class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <form id="restockForm" method="POST" class="restock-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="product">Product</label>
+                                <select id="product" name="product_id" required>
+                                    <option value="">Select a product</option>
+                                    <?php
+                                    $product_query = "SELECT id, product_name, unit_measurement FROM new_products ORDER BY product_name";
+                                    $product_result = mysqli_query($conn, $product_query);
+                                    while($row = mysqli_fetch_assoc($product_result)) {
+                                        echo "<option value='" . $row['id'] . "' data-uom='" . $row['unit_measurement'] . "'>" 
+                                            . htmlspecialchars($row['product_name']) . " (" . $row['unit_measurement'] . ")</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <div id="stockInfo" class="stock-info"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="quantity">Quantity</label>
+                                <input type="number" id="quantity" name="restock_quantity" step="0.01" min="0" required>
+                                <span id="uomDisplay" class="uom-display"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="unitCost">Cost per Unit (₱)</label>
+                                <input type="number" id="unitCost" name="cost_per_unit" step="0.01" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="expirationDate">Expiration Date</label>
+                                <input type="date" id="expirationDate" name="expiration_date" required>
+                                <div id="expirationWarning" class="expiration-warning">
+                                    Must be at least 3 months (90 days) after today to prevent waste.
+                                </div>
+                                <div id="expirationStatus" class="expiration-status"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="cancelRestock()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Restock</button>
+                        </div>
+                    </form>
+                </div>

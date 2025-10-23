@@ -1,0 +1,71 @@
+.expiring-stock-alert {
+    background: rgba(255, 244, 229, 0.95);
+    border-left: 4px solid #ff9800;
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] .expiring-stock-alert {
+    background: rgba(51, 41, 10, 0.95);
+    border-left: 4px solid #ff9800;
+}
+
+.expiring-stock-alert h3 {
+    margin: 0 0 8px 0;
+    color: #e65100;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .expiring-stock-alert h3 {
+    color: #ff9800;
+}
+
+.expiring-items {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.expiring-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] .expiring-item {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.expiring-item:last-child {
+    border-bottom: none;
+}
+
+.expiring-item .item-name {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+[data-theme="dark"] .expiring-item .item-name {
+    color: #fff;
+}
+
+.expiring-item .item-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #666;
+}
+
+[data-theme="dark"] .expiring-item .item-details {
+    color: #aaa;
+}
+
+.expiry-date {
+    color: #e65100;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .expiry-date {
+    color: #ff9800;
+}

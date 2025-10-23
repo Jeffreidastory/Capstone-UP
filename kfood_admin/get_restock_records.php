@@ -4,10 +4,6 @@ require_once "../connect.php";
 
 header('Content-Type: application/json');
 
-// Debug logging
-error_log("get_restock_records.php called");
-error_log("Session data: " . print_r($_SESSION, true));
-
 // Check if user is logged in and has appropriate permissions
 if (!isset($_SESSION['role_id']) || ($_SESSION['role_id'] != 1 && $_SESSION['role_id'] != 2)) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
@@ -32,6 +28,7 @@ try {
             'restock_quantity' => $row['restock_quantity'],
             'unit_measurement' => $row['uom'],
             'cost_per_unit' => $row['cost_per_unit'],
+            'final_price' => $row['final_price'],
             'expiration_date' => $row['expiration_date'],
             'status' => $row['status']
         ];
